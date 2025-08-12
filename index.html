@@ -1,0 +1,1779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Device Management System</title>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        /* Page Layout */
+        .page {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Login/Register Styles */
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-form h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #4a5568;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .login-form h2 i {
+            color: #667eea;
+            margin-right: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #4a5568;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #fff;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .form-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+            transform: scale(1.2);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #718096 0%, #4a5568 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #fc8181 0%, #e53e3e 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #68d391 0%, #38a169 100%);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #718096;
+        }
+
+        .register-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .register-link a:hover {
+            color: #764ba2;
+        }
+
+        /* Dashboard Layout */
+        .dashboard {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: #f7fafc;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .header-left h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .header-left h1 i {
+            margin-right: 10px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            margin-right: 15px;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 80px;
+            height: calc(100vh - 80px);
+            width: 260px;
+            background: #2d3748;
+            color: white;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 20px 0;
+        }
+
+        .nav-menu li {
+            margin: 0;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 16px 24px;
+            color: #cbd5e0;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .nav-link:hover {
+            background: #4a5568;
+            color: white;
+            border-left-color: #667eea;
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-left-color: #764ba2;
+        }
+
+        .nav-link i {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 260px;
+            padding: 30px;
+            min-height: calc(100vh - 80px);
+            background: #f7fafc;
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .section-header h2 {
+            font-size: 28px;
+            color: #2d3748;
+            font-weight: 600;
+        }
+
+        .device-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: all 0.3s ease;
+            border-left: 5px solid #667eea;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card i {
+            font-size: 40px;
+            color: #667eea;
+        }
+
+        .stat-info h3 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .stat-info p {
+            color: #718096;
+            font-size: 16px;
+        }
+
+        /* Tables */
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .data-table th {
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 14px;
+        }
+
+        .data-table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f7fafc;
+        }
+
+        .data-table tbody tr:nth-child(even) {
+            background: #fafafa;
+        }
+
+        .data-table tbody tr:nth-child(even):hover {
+            background: #f0f4f8;
+        }
+
+        /* Status badges */
+        .status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status.active {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status.inactive {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .status.provisioning {
+            background: #feebc8;
+            color: #7b341e;
+        }
+
+        .status.error {
+            background: #fed7e2;
+            color: #97266d;
+        }
+
+        /* Map Styles */
+        .map-container {
+            position: relative;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .map {
+            height: 600px;
+            width: 100%;
+        }
+
+        .map-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            z-index: 1;
+            min-width: 200px;
+        }
+
+        .map-legend h4 {
+            margin: 15px 0 10px 0;
+            color: #2d3748;
+            font-size: 16px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #4a5568;
+        }
+
+        .legend-marker {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .legend-marker.active {
+            background: #38a169;
+            box-shadow: 0 0 10px rgba(56, 161, 105, 0.5);
+        }
+
+        .legend-marker.inactive {
+            background: #e53e3e;
+            box-shadow: 0 0 10px rgba(229, 62, 62, 0.5);
+        }
+
+        .legend-marker.provisioning {
+            background: #dd6b20;
+            box-shadow: 0 0 10px rgba(221, 107, 32, 0.5);
+        }
+
+        /* Device markers on map */
+        .device-marker {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .device-marker:hover {
+            transform: scale(1.2);
+        }
+
+        .device-marker.active {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        }
+
+        .device-marker.inactive {
+            background: linear-gradient(135deg, #fc8181 0%, #e53e3e 100%);
+        }
+
+        .device-marker.provisioning {
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+        }
+
+        .device-marker.error {
+            background: linear-gradient(135deg, #ed64a6 0%, #d53f8c 100%);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-content h3 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            margin: 0;
+            border-radius: 20px 20px 0 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        #modal-body {
+            padding: 30px;
+        }
+
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1001;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .close:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .close-otp {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            color: #718096;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .close-otp:hover {
+            color: #2d3748;
+            transform: scale(1.1);
+        }
+
+        /* OTP Modal */
+        .otp-form {
+            text-align: center;
+            padding: 40px 30px;
+        }
+
+        .otp-form h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+
+        .otp-form p {
+            color: #718096;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .otp-form input {
+            font-size: 24px;
+            text-align: center;
+            letter-spacing: 5px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 16px 20px;
+            border-radius: 10px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            transform: translateX(400px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .notification.success {
+            border-left: 5px solid #38a169;
+        }
+
+        .notification.error {
+            border-left: 5px solid #e53e3e;
+        }
+
+        .notification.info {
+            border-left: 5px solid #3182ce;
+        }
+
+        .notification i {
+            font-size: 20px;
+        }
+
+        .notification.success i {
+            color: #38a169;
+        }
+
+        .notification.error i {
+            color: #e53e3e;
+        }
+
+        .notification.info i {
+            color: #3182ce;
+        }
+
+        /* Loading spinner */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .mobile-menu-toggle {
+                display: block;
+            }
+            
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 20px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                gap: 20px;
+                align-items: stretch;
+            }
+            
+            .device-actions {
+                justify-content: center;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+            }
+            
+            .header {
+                padding: 12px 16px;
+            }
+            
+            .header-left h1 {
+                font-size: 18px;
+            }
+            
+            .header-right {
+                gap: 10px;
+            }
+            
+            .map-controls {
+                position: relative;
+                top: 0;
+                right: 0;
+                margin: 20px;
+                width: calc(100% - 40px);
+            }
+            
+            .data-table {
+                font-size: 14px;
+            }
+            
+            .data-table th,
+            .data-table td {
+                padding: 12px 8px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 30px 20px;
+                margin: 20px;
+            }
+            
+            .main-content {
+                padding: 15px;
+            }
+            
+            .btn {
+                padding: 10px 16px;
+                font-size: 14px;
+            }
+            
+            .stat-card {
+                padding: 20px;
+                text-align: center;
+                flex-direction: column;
+            }
+            
+            .stat-card i {
+                font-size: 32px;
+            }
+        }
+
+        /* Additional improvements */
+        .device-details {
+            padding: 20px 0;
+        }
+        
+        .detail-row {
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        
+        .parameter-checkboxes,
+        .messaging-policy-checkboxes {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        .data-table {
+            min-width: 800px;
+        }
+
+        /* Device popup */
+        .device-popup {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .device-popup h4 {
+            margin-bottom: 10px;
+            color: #2d3748;
+            font-size: 16px;
+        }
+
+        .device-popup p {
+            margin-bottom: 5px;
+            color: #4a5568;
+        }
+
+        .device-popup strong {
+            color: #2d3748;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="login-page" class="page">
+        <div class="login-container">
+            <div class="login-form">
+                <h2><i class="fas fa-microchip"></i> IoT Device Management</h2>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+                <div class="register-link">
+                    <p>Don't have an account? <a href="#" id="show-register">Register here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Page -->
+    <div id="register-page" class="page" style="display: none;">
+        <div class="login-container">
+            <div class="login-form">
+                <h2><i class="fas fa-user-plus"></i> Create Account</h2>
+                <form id="register-form">
+                    <div class="form-group">
+                        <label for="reg-username">Username</label>
+                        <input type="text" id="reg-username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-email">Email</label>
+                        <input type="email" id="reg-email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-password">Password</label>
+                        <input type="password" id="reg-password" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-role">Role</label>
+                        <select id="reg-role" name="role" required>
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Register</button>
+                </form>
+                <div class="register-link">
+                    <p>Already have an account? <a href="#" id="show-login">Login here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="dashboard" style="display: none;">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <button class="mobile-menu-toggle" id="mobile-menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1><i class="fas fa-microchip"></i> IoT Device Management</h1>
+            </div>
+            <div class="header-right">
+                <span id="user-info"></span>
+                <button id="logout-btn" class="btn btn-secondary">Logout</button>
+            </div>
+        </header>
+
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <ul class="nav-menu">
+                <li><a href="#" data-section="dashboard" class="nav-link active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="#" data-section="vendors" class="nav-link"><i class="fas fa-building"></i> Vendor Manager</a></li>
+                <li><a href="#" data-section="parameters" class="nav-link"><i class="fas fa-sliders-h"></i> Parameter Manager</a></li>
+                <li><a href="#" data-section="item-types" class="nav-link"><i class="fas fa-tags"></i> Item Type Manager</a></li>
+                <li><a href="#" data-section="communication-policies" class="nav-link"><i class="fas fa-wifi"></i> Communication Policy</a></li>
+                <li><a href="#" data-section="projects" class="nav-link"><i class="fas fa-folder"></i> Project Manager</a></li>
+                <li><a href="#" data-section="devices" class="nav-link"><i class="fas fa-microchip"></i> Device Manager</a></li>
+                <li><a href="#" data-section="device-tracking" class="nav-link"><i class="fas fa-map"></i> Device Tracking</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard-section" class="content-section active">
+                <h2>Dashboard Overview</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i class="fas fa-microchip"></i>
+                        <div class="stat-info">
+                            <h3 id="total-devices">0</h3>
+                            <p>Total Devices</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-folder"></i>
+                        <div class="stat-info">
+                            <h3 id="total-projects">0</h3>
+                            <p>Projects</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-building"></i>
+                        <div class="stat-info">
+                            <h3 id="total-vendors">0</h3>
+                            <p>Vendors</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-check-circle"></i>
+                        <div class="stat-info">
+                            <h3 id="active-devices">0</h3>
+                            <p>Active Devices</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); margin-bottom: 30px;">
+                    <h3 style="margin-bottom: 20px; color: #2d3748;">Quick Actions</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <button class="btn btn-primary" onclick="showSection('devices')">
+                            <i class="fas fa-plus"></i> Add Device
+                        </button>
+                        <button class="btn btn-secondary" onclick="showSection('projects')">
+                            <i class="fas fa-folder-plus"></i> New Project
+                        </button>
+                        <button class="btn btn-success" onclick="showSection('device-tracking')">
+                            <i class="fas fa-map"></i> View Map
+                        </button>
+                        <button class="btn btn-primary" onclick="refreshAllData()">
+                            <i class="fas fa-sync-alt"></i> Refresh Data
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Device Tracking Section -->
+            <section id="device-tracking-section" class="content-section">
+                <h2>Device Tracking Map</h2>
+                <div class="map-container">
+                    <div id="map" class="map"></div>
+                    <div class="map-controls">
+                        <button id="refresh-map" class="btn btn-primary">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <div class="map-legend">
+                            <h4>Device Status</h4>
+                            <div class="legend-item">
+                                <span class="legend-marker active"></span>
+                                Active
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-marker inactive"></span>
+                                Inactive
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-marker provisioning"></span>
+                                Provisioning
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Vendors Section -->
+            <section id="vendors-section" class="content-section">
+                <div class="section-header">
+                    <h2>Vendor Manager</h2>
+                    <button id="add-vendor-btn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Vendor
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table id="vendors-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Website</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Parameters Section -->
+            <section id="parameters-section" class="content-section">
+                <div class="section-header">
+                    <h2>Parameter Manager</h2>
+                    <button id="add-parameter-btn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Parameter
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table id="parameters-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Data Type</th>
+                                <th>Unit</th>
+                                <th>Range</th>
+                                <th>Description</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Item Types Section -->
+            <section id="item-types-section" class="content-section">
+                <div class="section-header">
+                    <h2>Item Type Manager</h2>
+                    <button id="add-item-type-btn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Item Type
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table id="item-types-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Vendor</th>
+                                <th>Parameters</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Communication Policies Section -->
+            <section id="communication-policies-section" class="content-section">
+                <div class="section-header">
+                    <h2>Communication Policy Manager</h2>
+                    <button id="add-communication-policy-btn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Communication Policy
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table id="communication-policies-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Protocol</th>
+                                <th>QoS</th>
+                                <th>Message Format</th>
+                                <th>Topic Structure</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Projects Section -->
+            <section id="projects-section" class="content-section">
+                <div class="section-header">
+                    <h2>Project Manager</h2>
+                    <button id="add-project-btn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Project
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table id="projects-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Owner</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+            <section id="devices-section" class="content-section">
+                <div class="section-header">
+                    <h2>Device Manager</h2>
+                    <div class="device-actions">
+                        <button id="add-device-btn" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add Device
+                        </button>
+                        <button id="multi-device-btn" class="btn btn-secondary">
+                            <i class="fas fa-layer-group"></i> Multi Device Creation
+                        </button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="devices-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Device ID</th>
+                                <th>Name</th>
+                                <th>Project</th>
+                                <th>Item Type</th>
+                                <th>Status</th>
+                                <th>Location</th>
+                                <th>Last Seen</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal Container -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- OTP Modal -->
+    <div id="otp-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-otp">&times;</span>
+            <div class="otp-form">
+                <h3>OTP Verification</h3>
+                <p>An OTP has been sent to the admin email. Please enter it below:</p>
+                <form id="otp-form">
+                    <div class="form-group">
+                        <label for="otp-input">Enter OTP:</label>
+                        <input type="text" id="otp-input" name="otp" required maxlength="6">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Verify</button>
+                        <button type="button" id="cancel-otp" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUser = null;
+        let token = null; // Don't use localStorage initially for demo
+        let map = null;
+        let currentOtpId = null;
+        let currentAction = null;
+
+        // For demo purposes, we'll simulate API calls
+        const API_BASE = 'http://localhost:5000/api'; // Would be your actual API
+
+        // Mapbox Access Token - Replace with your token
+        // mapboxgl.accessToken = 'YOUR_MAPBOX_ACCESS_TOKEN';
+
+        // Demo data for testing
+        const demoData = {
+            devices: [
+                { id: '1', name: 'Temperature Sensor 01', deviceId: 'IOT_TEMP001', status: 'active', location: { latitude: 40.7128, longitude: -74.0060 } },
+                { id: '2', name: 'Humidity Sensor 02', deviceId: 'IOT_HUM002', status: 'inactive', location: { latitude: 40.7589, longitude: -73.9851 } },
+                { id: '3', name: 'Motion Detector 03', deviceId: 'IOT_MOT003', status: 'provisioning', location: { latitude: 40.7831, longitude: -73.9712 } }
+            ],
+            projects: [
+                { id: '1', name: 'Smart Building Project', description: 'IoT sensors for building automation', status: 'active' },
+                { id: '2', name: 'Environmental Monitoring', description: 'Weather and air quality sensors', status: 'active' }
+            ],
+            vendors: [
+                { id: '1', name: 'Sensor Corp', email: 'contact@sensorcorp.com', phone: '+1-555-0123', website: 'www.sensorcorp.com' },
+                { id: '2', name: 'IoT Solutions Ltd', email: 'info@iotsolutions.com', phone: '+1-555-0456', website: 'www.iotsolutions.com' }
+            ],
+            parameters: [
+                { id: '1', name: 'Temperature', dataType: 'number', unit: '°C', minValue: -50, maxValue: 100, description: 'Ambient temperature measurement' },
+                { id: '2', name: 'Humidity', dataType: 'number', unit: '%', minValue: 0, maxValue: 100, description: 'Relative humidity percentage' },
+                { id: '3', name: 'Motion', dataType: 'boolean', description: 'Motion detection status' }
+            ],
+            itemTypes: [
+                { id: '1', name: 'Temperature Sensor', description: 'Digital temperature monitoring device', vendor: 'Sensor Corp', parameters: ['Temperature'] },
+                { id: '2', name: 'Environmental Monitor', description: 'Multi-sensor environmental monitoring', vendor: 'IoT Solutions Ltd', parameters: ['Temperature', 'Humidity'] }
+            ],
+            communicationPolicies: [
+                { id: '1', name: 'Standard MQTT Policy', description: 'Default MQTT communication', protocol: 'MQTT', qos: 1, messageFormat: 'JSON', topicStructure: 'device/{deviceId}/data' },
+                { id: '2', name: 'HTTP REST Policy', description: 'HTTP REST API communication', protocol: 'HTTP', qos: 0, messageFormat: 'JSON', topicStructure: '/api/devices/{deviceId}' }
+            ]
+        };
+
+        // Utility functions
+        const showNotification = (message, type = 'info') => {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+                ${message}
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        };
+
+        // Simulated API requests for demo
+        const apiRequest = async (endpoint, options = {}) => {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    // Simulate API responses
+                    if (endpoint === '/auth/login') {
+                        resolve({
+                            token: 'demo-token-12345',
+                            user: { id: '1', username: 'demo', role: 'admin' }
+                        });
+                    } else if (endpoint === '/devices') {
+                        resolve(demoData.devices);
+                    } else if (endpoint === '/projects') {
+                        resolve(demoData.projects);
+                    } else if (endpoint === '/vendors') {
+                        resolve(demoData.vendors);
+                    } else if (endpoint === '/parameters') {
+                        resolve(demoData.parameters);
+                    } else if (endpoint === '/item-types') {
+                        resolve(demoData.itemTypes);
+                    } else if (endpoint === '/communication-policies') {
+                        resolve(demoData.communicationPolicies);
+                    } else {
+                        resolve([]);
+                    }
+                }, 500);
+            });
+        };
+
+        // Authentication
+        const login = async (credentials) => {
+            try {
+                const data = await apiRequest('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify(credentials)
+                });
+
+                token = data.token;
+                currentUser = data.user;
+
+                showDashboard();
+                showNotification('Login successful!', 'success');
+            } catch (error) {
+                showNotification('Login failed', 'error');
+            }
+        };
+
+        const logout = () => {
+            token = null;
+            currentUser = null;
+            showLogin();
+            showNotification('Logged out successfully!', 'success');
+        };
+
+        // UI Functions
+        const showLogin = () => {
+            document.getElementById('login-page').style.display = 'flex';
+            document.getElementById('register-page').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'none';
+        };
+
+        const showRegister = () => {
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('register-page').style.display = 'flex';
+            document.getElementById('dashboard').style.display = 'none';
+        };
+
+        const showDashboard = () => {
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('register-page').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'flex';
+            
+            document.getElementById('user-info').textContent = `Welcome, ${currentUser.username} (${currentUser.role})`;
+            loadDashboardData();
+        };
+
+        const showSection = (sectionName) => {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Show selected section
+            document.getElementById(`${sectionName}-section`).classList.add('active');
+
+            // Update navigation
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            document.querySelector(`[data-section="${sectionName}"]`).classList.add('active');
+
+            // Load section data
+            loadSectionData(sectionName);
+
+            // Close mobile menu
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('active');
+            }
+        };
+
+        // Data loading functions
+        const loadDashboardData = async () => {
+            try {
+                const [devices, projects, vendors] = await Promise.all([
+                    apiRequest('/devices'),
+                    apiRequest('/projects'),
+                    apiRequest('/vendors')
+                ]);
+
+                document.getElementById('total-devices').textContent = devices.length;
+                document.getElementById('total-projects').textContent = projects.length;
+                document.getElementById('total-vendors').textContent = vendors.length;
+                document.getElementById('active-devices').textContent = 
+                    devices.filter(d => d.status === 'active').length;
+
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        };
+
+        const loadSectionData = async (section) => {
+            switch (section) {
+                case 'vendors':
+                    await loadVendors();
+                    break;
+                case 'parameters':
+                    await loadParameters();
+                    break;
+                case 'item-types':
+                    await loadItemTypes();
+                    break;
+                case 'communication-policies':
+                    await loadCommunicationPolicies();
+                    break;
+                case 'projects':
+                    await loadProjects();
+                    break;
+                case 'devices':
+                    await loadDevices();
+                    break;
+                case 'device-tracking':
+                    await initializeMap();
+                    break;
+            }
+        };
+
+        const loadVendors = async () => {
+            try {
+                const vendors = await apiRequest('/vendors');
+                const tbody = document.querySelector('#vendors-table tbody');
+                tbody.innerHTML = '';
+
+                vendors.forEach(vendor => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${vendor.name}</td>
+                        <td>${vendor.email || '-'}</td>
+                        <td>${vendor.phone || '-'}</td>
+                        <td>${vendor.website || '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-secondary" onclick="editVendor('${vendor.id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteVendor('${vendor.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading vendors:', error);
+            }
+        };
+
+        const loadParameters = async () => {
+            try {
+                const parameters = await apiRequest('/parameters');
+                const tbody = document.querySelector('#parameters-table tbody');
+                tbody.innerHTML = '';
+
+                parameters.forEach(param => {
+                    const row = document.createElement('tr');
+                    const range = param.minValue !== undefined && param.maxValue !== undefined 
+                        ? `${param.minValue} - ${param.maxValue}` 
+                        : '-';
+                    
+                    row.innerHTML = `
+                        <td>${param.name}</td>
+                        <td>${param.dataType}</td>
+                        <td>${param.unit || '-'}</td>
+                        <td>${range}</td>
+                        <td>${param.description || '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-secondary" onclick="editParameter('${param.id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteParameter('${param.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading parameters:', error);
+            }
+        };
+
+        const loadItemTypes = async () => {
+            try {
+                const itemTypes = await apiRequest('/item-types');
+                const tbody = document.querySelector('#item-types-table tbody');
+                tbody.innerHTML = '';
+
+                itemTypes.forEach(itemType => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${itemType.name}</td>
+                        <td>${itemType.description || '-'}</td>
+                        <td>${itemType.vendor || '-'}</td>
+                        <td>${itemType.parameters ? itemType.parameters.length : 0} parameters</td>
+                        <td>
+                            <button class="btn btn-sm btn-secondary" onclick="editItemType('${itemType.id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteItemType('${itemType.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading item types:', error);
+            }
+        };
+
+        const loadCommunicationPolicies = async () => {
+            try {
+                const policies = await apiRequest('/communication-policies');
+                const tbody = document.querySelector('#communication-policies-table tbody');
+                tbody.innerHTML = '';
+
+                policies.forEach(policy => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${policy.name}</td>
+                        <td>${policy.description || '-'}</td>
+                        <td>${policy.protocol}</td>
+                        <td>${policy.qos}</td>
+                        <td>${policy.messageFormat}</td>
+                        <td>${policy.topicStructure || '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-secondary" onclick="editCommunicationPolicy('${policy.id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteCommunicationPolicy('${policy.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading communication policies:', error);
+            }
+        };
+            try {
+                const projects = await apiRequest('/projects');
+                const tbody = document.querySelector('#projects-table tbody');
+                tbody.innerHTML = '';
+
+                projects.forEach(project => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${project.name}</td>
+                        <td>${project.description || '-'}</td>
+                        <td>Demo User</td>
+                        <td><span class="status ${project.status}">${project.status}</span></td>
+                        <td>${new Date().toLocaleDateString()}</td>
+                        <td>
+                            <button class="btn btn-sm btn-secondary" onclick="editProject('${project.id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteProject('${project.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading projects:', error);
+            }
+        };
+
+        const loadDevices = async () => {
+            try {
+                const devices = await apiRequest('/devices');
+                const tbody = document.querySelector('#devices-table tbody');
+                tbody.innerHTML = '';
+
+                devices.forEach(device => {
+                    const row = document.createElement('tr');
+                    const location = device.location && device.location.latitude && device.location.longitude
+                        ? `${device.location.latitude.toFixed(4)}, ${device.location.longitude.toFixed(4)}`
+                        : '-';
+                    
+                    row.innerHTML = `
+                        <td>${device.deviceId}</td>
+                        <td>${device.name}</td>
+                        <td>Demo Project</td>
+                        <td>Temperature Sensor</td>
+                        <td><span class="status ${device.status}">${device.status}</span></td>
+                        <td>${location}</td>
+                        <td>${new Date().toLocaleString()}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="viewDevice('${device.id}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="editDevice('${device.id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteDevice('${device.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading devices:', error);
+            }
+        };
+
+        // Map functions (simplified for demo)
+        const initializeMap = async () => {
+            const mapContainer = document.getElementById('map');
+            mapContainer.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f0f4f8; color: #4a5568;">
+                    <div style="text-align: center;">
+                        <i class="fas fa-map fa-3x" style="margin-bottom: 20px; opacity: 0.5;"></i>
+                        <h3>Map View</h3>
+                        <p>Interactive device tracking map would appear here</p>
+                        <p style="font-size: 14px; opacity: 0.7;">(Requires Mapbox API key)</p>
+                    </div>
+                </div>
+            `;
+        };
+
+        // Modal functions
+        const showModal = (title, content) => {
+            document.getElementById('modal-body').innerHTML = `
+                <h3>${title}</h3>
+                ${content}
+            `;
+            document.getElementById('modal').style.display = 'block';
+        };
+
+        const hideModal = () => {
+            document.getElementById('modal').style.display = 'none';
+        };
+
+        // Placeholder functions
+        const editProject = (id) => showNotification('Edit functionality to be implemented', 'info');
+        const deleteProject = (id) => showNotification('Delete functionality to be implemented', 'info');
+        const editVendor = (id) => showNotification('Edit vendor functionality to be implemented', 'info');
+        const deleteVendor = (id) => showNotification('Delete vendor functionality to be implemented', 'info');
+        const editParameter = (id) => showNotification('Edit parameter functionality to be implemented', 'info');
+        const deleteParameter = (id) => showNotification('Delete parameter functionality to be implemented', 'info');
+        const editItemType = (id) => showNotification('Edit item type functionality to be implemented', 'info');
+        const deleteItemType = (id) => showNotification('Delete item type functionality to be implemented', 'info');
+        const editCommunicationPolicy = (id) => showNotification('Edit communication policy functionality to be implemented', 'info');
+        const deleteCommunicationPolicy = (id) => showNotification('Delete communication policy functionality to be implemented', 'info');
+        const viewDevice = (id) => showNotification('View device functionality to be implemented', 'info');
+        const editDevice = (id) => showNotification('Edit device functionality to be implemented', 'info');
+        const deleteDevice = (id) => showNotification('Delete device functionality to be implemented', 'info');
+        const refreshAllData = () => {
+            showNotification('Refreshing all data...', 'info');
+            loadDashboardData();
+        };
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Show login initially
+            showLogin();
+
+            // Login form
+            document.getElementById('login-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                await login(Object.fromEntries(formData.entries()));
+            });
+
+            // Register form
+            document.getElementById('register-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                showNotification('Registration would be processed here', 'info');
+                showLogin();
+            });
+
+            // Navigation
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showSection(e.target.dataset.section);
+                });
+            });
+
+            // Mobile menu toggle
+            document.getElementById('mobile-menu-toggle').addEventListener('click', () => {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.toggle('active');
+            });
+
+            // Close mobile menu when clicking on main content
+            document.querySelector('.main-content').addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    document.getElementById('sidebar').classList.remove('active');
+                }
+            });
+
+            // Button event listeners
+            document.getElementById('show-register').addEventListener('click', (e) => {
+                e.preventDefault();
+                showRegister();
+            });
+            
+            document.getElementById('show-login').addEventListener('click', (e) => {
+                e.preventDefault();
+                showLogin();
+            });
+            
+            document.getElementById('logout-btn').addEventListener('click', logout);
+            
+            // Add buttons
+            document.getElementById('add-vendor-btn').addEventListener('click', () => {
+                showNotification('Add vendor functionality to be implemented', 'info');
+            });
+
+            document.getElementById('add-parameter-btn').addEventListener('click', () => {
+                showNotification('Add parameter functionality to be implemented', 'info');
+            });
+
+            document.getElementById('add-item-type-btn').addEventListener('click', () => {
+                showNotification('Add item type functionality to be implemented', 'info');
+            });
+
+            document.getElementById('add-communication-policy-btn').addEventListener('click', () => {
+                showNotification('Add communication policy functionality to be implemented', 'info');
+            });
+
+            document.getElementById('add-project-btn').addEventListener('click', () => {
+                showNotification('Add project functionality to be implemented', 'info');
+            });
+
+            document.getElementById('add-device-btn').addEventListener('click', () => {
+                showNotification('Add device functionality to be implemented', 'info');
+            });
+
+            document.getElementById('multi-device-btn').addEventListener('click', () => {
+                showNotification('Multi-device creation functionality to be implemented', 'info');
+            });
+
+            document.getElementById('refresh-map').addEventListener('click', () => {
+                showNotification('Map refreshed', 'success');
+            });
+
+            // Modal close
+            document.querySelector('.close').addEventListener('click', hideModal);
+
+            // Close modal on outside click
+            window.addEventListener('click', (e) => {
+                if (e.target === document.getElementById('modal')) {
+                    hideModal();
+                }
+            });
+
+            // Escape key to close modals
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    hideModal();
+                }
+            });
+        });
+
+        console.log('IoT Device Management System loaded successfully!');
+    </script>
+</body>
+</html>
