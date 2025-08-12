@@ -4,869 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IoT Device Management System</title>
+    <link rel="stylesheet" href="styles.css">
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
-        }
-
-        /* Page Layout */
-        .page {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        /* Login/Register Styles */
-        .login-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 400px;
-            animation: fadeInUp 0.6s ease-out;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .login-form h2 {
-            text-align: center;
-            margin-bottom: 30px;
-            color: #4a5568;
-            font-size: 28px;
-            font-weight: 600;
-        }
-
-        .login-form h2 i {
-            color: #667eea;
-            margin-right: 10px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #4a5568;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            background: #fff;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            transform: translateY(-2px);
-        }
-
-        .form-group input[type="checkbox"] {
-            width: auto;
-            margin-right: 8px;
-            transform: scale(1.2);
-        }
-
-        /* Buttons */
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        .btn-secondary {
-            background: linear-gradient(135deg, #718096 0%, #4a5568 100%);
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #fc8181 0%, #e53e3e 100%);
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #68d391 0%, #38a169 100%);
-        }
-
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 14px;
-        }
-
-        .register-link {
-            text-align: center;
-            margin-top: 20px;
-            color: #718096;
-        }
-
-        .register-link a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        .register-link a:hover {
-            color: #764ba2;
-        }
-
-        /* Dashboard Layout */
-        .dashboard {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            background: #f7fafc;
-        }
-
-        /* Header */
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 16px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-        }
-
-        .header-left h1 {
-            font-size: 24px;
-            font-weight: 600;
-        }
-
-        .header-left h1 i {
-            margin-right: 10px;
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .mobile-menu-toggle {
-            display: none;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 20px;
-            margin-right: 15px;
-            cursor: pointer;
-            padding: 5px;
-        }
-
-        /* Sidebar */
-        .sidebar {
-            position: fixed;
-            left: 0;
-            top: 80px;
-            height: calc(100vh - 80px);
-            width: 260px;
-            background: #2d3748;
-            color: white;
-            overflow-y: auto;
-            z-index: 100;
-            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-        }
-
-        .nav-menu {
-            list-style: none;
-            padding: 20px 0;
-        }
-
-        .nav-menu li {
-            margin: 0;
-        }
-
-        .nav-link {
-            display: flex;
-            align-items: center;
-            padding: 16px 24px;
-            color: #cbd5e0;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            border-left: 4px solid transparent;
-        }
-
-        .nav-link:hover {
-            background: #4a5568;
-            color: white;
-            border-left-color: #667eea;
-        }
-
-        .nav-link.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-left-color: #764ba2;
-        }
-
-        .nav-link i {
-            margin-right: 12px;
-            width: 20px;
-            text-align: center;
-        }
-
-        /* Main Content */
-        .main-content {
-            margin-left: 260px;
-            padding: 30px;
-            min-height: calc(100vh - 80px);
-            background: #f7fafc;
-        }
-
-        .content-section {
-            display: none;
-        }
-
-        .content-section.active {
-            display: block;
-            animation: fadeIn 0.3s ease-in;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        .section-header h2 {
-            font-size: 28px;
-            color: #2d3748;
-            font-weight: 600;
-        }
-
-        .device-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            transition: all 0.3s ease;
-            border-left: 5px solid #667eea;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        .stat-card i {
-            font-size: 40px;
-            color: #667eea;
-        }
-
-        .stat-info h3 {
-            font-size: 32px;
-            font-weight: 700;
-            color: #2d3748;
-            margin-bottom: 5px;
-        }
-
-        .stat-info p {
-            color: #718096;
-            font-size: 16px;
-        }
-
-        /* Tables */
-        .table-container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-            overflow: hidden;
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .data-table thead {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .data-table th,
-        .data-table td {
-            padding: 16px;
-            text-align: left;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .data-table th {
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-size: 14px;
-        }
-
-        .data-table tbody tr {
-            transition: all 0.2s ease;
-        }
-
-        .data-table tbody tr:hover {
-            background: #f7fafc;
-        }
-
-        .data-table tbody tr:nth-child(even) {
-            background: #fafafa;
-        }
-
-        .data-table tbody tr:nth-child(even):hover {
-            background: #f0f4f8;
-        }
-
-        /* Status badges */
-        .status {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .status.active {
-            background: #c6f6d5;
-            color: #22543d;
-        }
-
-        .status.inactive {
-            background: #fed7d7;
-            color: #742a2a;
-        }
-
-        .status.provisioning {
-            background: #feebc8;
-            color: #7b341e;
-        }
-
-        .status.error {
-            background: #fed7e2;
-            color: #97266d;
-        }
-
-        /* Map Styles */
-        .map-container {
-            position: relative;
-            background: white;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-        }
-
-        .map {
-            height: 600px;
-            width: 100%;
-        }
-
-        .map-controls {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            z-index: 1;
-            min-width: 200px;
-        }
-
-        .map-legend h4 {
-            margin: 15px 0 10px 0;
-            color: #2d3748;
-            font-size: 16px;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 8px;
-            font-size: 14px;
-            color: #4a5568;
-        }
-
-        .legend-marker {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-
-        .legend-marker.active {
-            background: #38a169;
-            box-shadow: 0 0 10px rgba(56, 161, 105, 0.5);
-        }
-
-        .legend-marker.inactive {
-            background: #e53e3e;
-            box-shadow: 0 0 10px rgba(229, 62, 62, 0.5);
-        }
-
-        .legend-marker.provisioning {
-            background: #dd6b20;
-            box-shadow: 0 0 10px rgba(221, 107, 32, 0.5);
-        }
-
-        /* Device markers on map */
-        .device-marker {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        .device-marker:hover {
-            transform: scale(1.2);
-        }
-
-        .device-marker.active {
-            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-        }
-
-        .device-marker.inactive {
-            background: linear-gradient(135deg, #fc8181 0%, #e53e3e 100%);
-        }
-
-        .device-marker.provisioning {
-            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
-        }
-
-        .device-marker.error {
-            background: linear-gradient(135deg, #ed64a6 0%, #d53f8c 100%);
-        }
-
-        /* Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(5px);
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 0;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: modalSlideIn 0.3s ease-out;
-        }
-
-        @keyframes modalSlideIn {
-            from {
-                opacity: 0;
-                transform: scale(0.9) translateY(-50px);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-        }
-
-        .modal-content h3 {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 30px;
-            margin: 0;
-            border-radius: 20px 20px 0 0;
-            font-size: 24px;
-            font-weight: 600;
-        }
-
-        #modal-body {
-            padding: 30px;
-        }
-
-        .close {
-            position: absolute;
-            right: 20px;
-            top: 20px;
-            color: white;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 1001;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            transition: all 0.3s ease;
-        }
-
-        .close:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: scale(1.1);
-        }
-
-        .close-otp {
-            position: absolute;
-            right: 15px;
-            top: 15px;
-            color: #718096;
-            font-size: 24px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .close-otp:hover {
-            color: #2d3748;
-            transform: scale(1.1);
-        }
-
-        /* OTP Modal */
-        .otp-form {
-            text-align: center;
-            padding: 40px 30px;
-        }
-
-        .otp-form h3 {
-            color: #2d3748;
-            margin-bottom: 15px;
-            font-size: 24px;
-        }
-
-        .otp-form p {
-            color: #718096;
-            margin-bottom: 30px;
-            line-height: 1.6;
-        }
-
-        .otp-form input {
-            font-size: 24px;
-            text-align: center;
-            letter-spacing: 5px;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-top: 30px;
-        }
-
-        /* Notifications */
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: white;
-            padding: 16px 20px;
-            border-radius: 10px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
-            z-index: 2000;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            min-width: 300px;
-            transform: translateX(400px);
-            opacity: 0;
-            transition: all 0.3s ease;
-        }
-
-        .notification.show {
-            transform: translateX(0);
-            opacity: 1;
-        }
-
-        .notification.success {
-            border-left: 5px solid #38a169;
-        }
-
-        .notification.error {
-            border-left: 5px solid #e53e3e;
-        }
-
-        .notification.info {
-            border-left: 5px solid #3182ce;
-        }
-
-        .notification i {
-            font-size: 20px;
-        }
-
-        .notification.success i {
-            color: #38a169;
-        }
-
-        .notification.error i {
-            color: #e53e3e;
-        }
-
-        .notification.info i {
-            color: #3182ce;
-        }
-
-        /* Loading spinner */
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-radius: 50%;
-            border-top-color: #667eea;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .mobile-menu-toggle {
-                display: block;
-            }
-            
-            .sidebar {
-                transform: translateX(-100%);
-            }
-            
-            .sidebar.active {
-                transform: translateX(0);
-            }
-            
-            .main-content {
-                margin-left: 0;
-                padding: 20px;
-            }
-            
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .section-header {
-                flex-direction: column;
-                gap: 20px;
-                align-items: stretch;
-            }
-            
-            .device-actions {
-                justify-content: center;
-            }
-            
-            .modal-content {
-                width: 95%;
-                margin: 10% auto;
-            }
-            
-            .header {
-                padding: 12px 16px;
-            }
-            
-            .header-left h1 {
-                font-size: 18px;
-            }
-            
-            .header-right {
-                gap: 10px;
-            }
-            
-            .map-controls {
-                position: relative;
-                top: 0;
-                right: 0;
-                margin: 20px;
-                width: calc(100% - 40px);
-            }
-            
-            .data-table {
-                font-size: 14px;
-            }
-            
-            .data-table th,
-            .data-table td {
-                padding: 12px 8px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .login-container {
-                padding: 30px 20px;
-                margin: 20px;
-            }
-            
-            .main-content {
-                padding: 15px;
-            }
-            
-            .btn {
-                padding: 10px 16px;
-                font-size: 14px;
-            }
-            
-            .stat-card {
-                padding: 20px;
-                text-align: center;
-                flex-direction: column;
-            }
-            
-            .stat-card i {
-                font-size: 32px;
-            }
-        }
-
-        /* Additional improvements */
-        .device-details {
-            padding: 20px 0;
-        }
-        
-        .detail-row {
-            margin-bottom: 10px;
-            padding: 8px 0;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        
-        .detail-row:last-child {
-            border-bottom: none;
-        }
-        
-        .parameter-checkboxes,
-        .messaging-policy-checkboxes {
-            max-height: 200px;
-            overflow-y: auto;
-            border: 1px solid #e2e8f0;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        
-        .table-container {
-            overflow-x: auto;
-        }
-        
-        .data-table {
-            min-width: 800px;
-        }
-
-        /* Device popup */
-        .device-popup {
-            font-size: 14px;
-            line-height: 1.4;
-        }
-
-        .device-popup h4 {
-            margin-bottom: 10px;
-            color: #2d3748;
-            font-size: 16px;
-        }
-
-        .device-popup p {
-            margin-bottom: 5px;
-            color: #4a5568;
-        }
-
-        .device-popup strong {
-            color: #2d3748;
-        }
-    </style>
 </head>
 <body>
     <!-- Login Page -->
+    <video autoplay muted loop id="bg-video">
+        <source src="https://videos.pexels.com/video-files/7952139/7952139-uhd_2560_1440_30fps.mp4" type="video/mp4">
+    </video>
     <div id="login-page" class="page">
         <div class="login-container">
             <div class="login-form">
-                <h2><i class="fas fa-microchip"></i> IoT Device Management</h2>
+                <h2><i class="fas fa-microchip"></i> IOTIQ  WELCOME</h2>
                 <form id="login-form">
                     <div class="form-group">
                         <label for="username">Username</label>
@@ -924,9 +77,6 @@
         <!-- Header -->
         <header class="header">
             <div class="header-left">
-                <button class="mobile-menu-toggle" id="mobile-menu-toggle">
-                    <i class="fas fa-bars"></i>
-                </button>
                 <h1><i class="fas fa-microchip"></i> IoT Device Management</h1>
             </div>
             <div class="header-right">
@@ -936,14 +86,16 @@
         </header>
 
         <!-- Sidebar -->
-        <nav class="sidebar" id="sidebar">
+        <nav class="sidebar">
             <ul class="nav-menu">
                 <li><a href="#" data-section="dashboard" class="nav-link active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="#" data-section="projects" class="nav-link"><i class="fas fa-folder"></i> Project Manager</a></li>
                 <li><a href="#" data-section="vendors" class="nav-link"><i class="fas fa-building"></i> Vendor Manager</a></li>
                 <li><a href="#" data-section="parameters" class="nav-link"><i class="fas fa-sliders-h"></i> Parameter Manager</a></li>
                 <li><a href="#" data-section="item-types" class="nav-link"><i class="fas fa-tags"></i> Item Type Manager</a></li>
+                <li><a href="#" data-section="messaging-policies" class="nav-link"><i class="fas fa-envelope"></i> Messaging Policy</a></li>
                 <li><a href="#" data-section="communication-policies" class="nav-link"><i class="fas fa-wifi"></i> Communication Policy</a></li>
-                <li><a href="#" data-section="projects" class="nav-link"><i class="fas fa-folder"></i> Project Manager</a></li>
+                <li><a href="#" data-section="space-types" class="nav-link"><i class="fas fa-map-marker-alt"></i> Space Type Manager</a></li>
                 <li><a href="#" data-section="devices" class="nav-link"><i class="fas fa-microchip"></i> Device Manager</a></li>
                 <li><a href="#" data-section="device-tracking" class="nav-link"><i class="fas fa-map"></i> Device Tracking</a></li>
             </ul>
@@ -984,25 +136,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Quick Actions -->
-                <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); margin-bottom: 30px;">
-                    <h3 style="margin-bottom: 20px; color: #2d3748;">Quick Actions</h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                        <button class="btn btn-primary" onclick="showSection('devices')">
-                            <i class="fas fa-plus"></i> Add Device
-                        </button>
-                        <button class="btn btn-secondary" onclick="showSection('projects')">
-                            <i class="fas fa-folder-plus"></i> New Project
-                        </button>
-                        <button class="btn btn-success" onclick="showSection('device-tracking')">
-                            <i class="fas fa-map"></i> View Map
-                        </button>
-                        <button class="btn btn-primary" onclick="refreshAllData()">
-                            <i class="fas fa-sync-alt"></i> Refresh Data
-                        </button>
-                    </div>
-                </div>
             </section>
 
             <!-- Device Tracking Section -->
@@ -1033,105 +166,6 @@
                 </div>
             </section>
 
-            <!-- Vendors Section -->
-            <section id="vendors-section" class="content-section">
-                <div class="section-header">
-                    <h2>Vendor Manager</h2>
-                    <button id="add-vendor-btn" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Add Vendor
-                    </button>
-                </div>
-                <div class="table-container">
-                    <table id="vendors-table" class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Phone</th>
-                                <th>Website</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </section>
-
-            <!-- Parameters Section -->
-            <section id="parameters-section" class="content-section">
-                <div class="section-header">
-                    <h2>Parameter Manager</h2>
-                    <button id="add-parameter-btn" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Add Parameter
-                    </button>
-                </div>
-                <div class="table-container">
-                    <table id="parameters-table" class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Data Type</th>
-                                <th>Unit</th>
-                                <th>Range</th>
-                                <th>Description</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </section>
-
-            <!-- Item Types Section -->
-            <section id="item-types-section" class="content-section">
-                <div class="section-header">
-                    <h2>Item Type Manager</h2>
-                    <button id="add-item-type-btn" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Add Item Type
-                    </button>
-                </div>
-                <div class="table-container">
-                    <table id="item-types-table" class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Description</th>
-                                <th>Vendor</th>
-                                <th>Parameters</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </section>
-
-            <!-- Communication Policies Section -->
-            <section id="communication-policies-section" class="content-section">
-                <div class="section-header">
-                    <h2>Communication Policy Manager</h2>
-                    <button id="add-communication-policy-btn" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Add Communication Policy
-                    </button>
-                </div>
-                <div class="table-container">
-                    <table id="communication-policies-table" class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Description</th>
-                                <th>Protocol</th>
-                                <th>QoS</th>
-                                <th>Message Format</th>
-                                <th>Topic Structure</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </section>
-
             <!-- Projects Section -->
             <section id="projects-section" class="content-section">
                 <div class="section-header">
@@ -1156,6 +190,155 @@
                     </table>
                 </div>
             </section>
+
+            <!-- Vendors Section -->
+            <section id="vendors-section" class="content-section">
+                <div class="section-header">
+                    <h2>Vendor Manager</h2>
+                    <button id="add-vendor-btn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Vendor
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table id="vendors-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Website</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+<!-- Parameters Section -->
+            <section id="parameters-section" class="content-section">
+                <div class="section-header">
+                    <h2>Parameter Manager</h2>
+                    <button id="add-parameter-btn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Parameter
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table id="parameters-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Parameter Name</th>
+                                <th>vendors</th>
+                                <th>variable Type</th>
+                                <th>Range</th>
+                                <th>Description</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+            <!-- Item Types Section -->
+            <section id="item-types-section" class="content-section">
+                <div class="section-header">
+                    <h2>Item Type Manager</h2>
+                    <button id="add-item-type-btn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Item Type
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table id="item-types-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Vendor</th>
+                                <th>Parameters</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Messaging Policies Section -->
+            <section id="messaging-policies-section" class="content-section">
+                <div class="section-header">
+                    <h2>Messaging Policy Manager</h2>
+                    <button id="add-messaging-policy-btn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Messaging Policy
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table id="messaging-policies-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Protocol</th>
+                                <th>Topic Structure</th>
+                                <th>QoS</th>
+                                <th>Message Format</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Communication Policies Section -->
+            <section id="communication-policies-section" class="content-section">
+                <div class="section-header">
+                    <h2>Communication Policy Manager</h2>
+                    <button id="add-communication-policy-btn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Communication Policy
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table id="communication-policies-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Messaging Policies</th>
+                                <th>Timeout</th>
+                                <th>Keep Alive</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Space Types Section -->
+            <section id="space-types-section" class="content-section">
+                <div class="section-header">
+                    <h2>Space Type Manager</h2>
+                    <button id="add-space-type-btn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Space Type
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table id="space-types-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Coordinates</th>
+                                <th>Area</th>
+                                <th>Capacity</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Devices Section -->
             <section id="devices-section" class="content-section">
                 <div class="section-header">
                     <h2>Device Manager</h2>
@@ -1221,46 +404,15 @@
     <script>
         // Global variables
         let currentUser = null;
-        let token = null; // Don't use localStorage initially for demo
+        let token = localStorage.getItem('token');
         let map = null;
         let currentOtpId = null;
         let currentAction = null;
 
-        // For demo purposes, we'll simulate API calls
-        const API_BASE = 'http://localhost:5000/api'; // Would be your actual API
+        const API_BASE = 'http://3.7.165.153:5000/api';
 
         // Mapbox Access Token - Replace with your token
-        // mapboxgl.accessToken = 'YOUR_MAPBOX_ACCESS_TOKEN';
-
-        // Demo data for testing
-        const demoData = {
-            devices: [
-                { id: '1', name: 'Temperature Sensor 01', deviceId: 'IOT_TEMP001', status: 'active', location: { latitude: 40.7128, longitude: -74.0060 } },
-                { id: '2', name: 'Humidity Sensor 02', deviceId: 'IOT_HUM002', status: 'inactive', location: { latitude: 40.7589, longitude: -73.9851 } },
-                { id: '3', name: 'Motion Detector 03', deviceId: 'IOT_MOT003', status: 'provisioning', location: { latitude: 40.7831, longitude: -73.9712 } }
-            ],
-            projects: [
-                { id: '1', name: 'Smart Building Project', description: 'IoT sensors for building automation', status: 'active' },
-                { id: '2', name: 'Environmental Monitoring', description: 'Weather and air quality sensors', status: 'active' }
-            ],
-            vendors: [
-                { id: '1', name: 'Sensor Corp', email: 'contact@sensorcorp.com', phone: '+1-555-0123', website: 'www.sensorcorp.com' },
-                { id: '2', name: 'IoT Solutions Ltd', email: 'info@iotsolutions.com', phone: '+1-555-0456', website: 'www.iotsolutions.com' }
-            ],
-            parameters: [
-                { id: '1', name: 'Temperature', dataType: 'number', unit: '°C', minValue: -50, maxValue: 100, description: 'Ambient temperature measurement' },
-                { id: '2', name: 'Humidity', dataType: 'number', unit: '%', minValue: 0, maxValue: 100, description: 'Relative humidity percentage' },
-                { id: '3', name: 'Motion', dataType: 'boolean', description: 'Motion detection status' }
-            ],
-            itemTypes: [
-                { id: '1', name: 'Temperature Sensor', description: 'Digital temperature monitoring device', vendor: 'Sensor Corp', parameters: ['Temperature'] },
-                { id: '2', name: 'Environmental Monitor', description: 'Multi-sensor environmental monitoring', vendor: 'IoT Solutions Ltd', parameters: ['Temperature', 'Humidity'] }
-            ],
-            communicationPolicies: [
-                { id: '1', name: 'Standard MQTT Policy', description: 'Default MQTT communication', protocol: 'MQTT', qos: 1, messageFormat: 'JSON', topicStructure: 'device/{deviceId}/data' },
-                { id: '2', name: 'HTTP REST Policy', description: 'HTTP REST API communication', protocol: 'HTTP', qos: 0, messageFormat: 'JSON', topicStructure: '/api/devices/{deviceId}' }
-            ]
-        };
+        mapboxgl.accessToken = 'YOUR_MAPBOX_ACCESS_TOKEN';
 
         // Utility functions
         const showNotification = (message, type = 'info') => {
@@ -1271,48 +423,41 @@
                 ${message}
             `;
             document.body.appendChild(notification);
-            
+
             setTimeout(() => {
                 notification.classList.add('show');
             }, 100);
-            
+
             setTimeout(() => {
                 notification.classList.remove('show');
                 setTimeout(() => {
-                    if (document.body.contains(notification)) {
-                        document.body.removeChild(notification);
-                    }
+                    document.body.removeChild(notification);
                 }, 300);
             }, 3000);
         };
 
-        // Simulated API requests for demo
         const apiRequest = async (endpoint, options = {}) => {
-            return new Promise((resolve) => {
-                setTimeout(() => {
-                    // Simulate API responses
-                    if (endpoint === '/auth/login') {
-                        resolve({
-                            token: 'demo-token-12345',
-                            user: { id: '1', username: 'demo', role: 'admin' }
-                        });
-                    } else if (endpoint === '/devices') {
-                        resolve(demoData.devices);
-                    } else if (endpoint === '/projects') {
-                        resolve(demoData.projects);
-                    } else if (endpoint === '/vendors') {
-                        resolve(demoData.vendors);
-                    } else if (endpoint === '/parameters') {
-                        resolve(demoData.parameters);
-                    } else if (endpoint === '/item-types') {
-                        resolve(demoData.itemTypes);
-                    } else if (endpoint === '/communication-policies') {
-                        resolve(demoData.communicationPolicies);
-                    } else {
-                        resolve([]);
-                    }
-                }, 500);
-            });
+            const config = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token && { Authorization: `Bearer ${token}` })
+                },
+                ...options
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, config);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'API request failed');
+                }
+
+                return data;
+            } catch (error) {
+                showNotification(error.message, 'error');
+                throw error;
+            }
         };
 
         // Authentication
@@ -1325,17 +470,35 @@
 
                 token = data.token;
                 currentUser = data.user;
+                localStorage.setItem('token', token);
+                localStorage.setItem('user', JSON.stringify(currentUser));
 
                 showDashboard();
                 showNotification('Login successful!', 'success');
             } catch (error) {
-                showNotification('Login failed', 'error');
+                console.error('Login failed:', error);
+            }
+        };
+
+        const register = async (userData) => {
+            try {
+                await apiRequest('/auth/register', {
+                    method: 'POST',
+                    body: JSON.stringify(userData)
+                });
+
+                showNotification('Registration successful! Please login.', 'success');
+                showLogin();
+            } catch (error) {
+                console.error('Registration failed:', error);
             }
         };
 
         const logout = () => {
             token = null;
             currentUser = null;
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
             showLogin();
             showNotification('Logged out successfully!', 'success');
         };
@@ -1357,7 +520,7 @@
             document.getElementById('login-page').style.display = 'none';
             document.getElementById('register-page').style.display = 'none';
             document.getElementById('dashboard').style.display = 'flex';
-            
+
             document.getElementById('user-info').textContent = `Welcome, ${currentUser.username} (${currentUser.role})`;
             loadDashboardData();
         };
@@ -1379,11 +542,6 @@
 
             // Load section data
             loadSectionData(sectionName);
-
-            // Close mobile menu
-            if (window.innerWidth <= 768) {
-                document.getElementById('sidebar').classList.remove('active');
-            }
         };
 
         // Data loading functions
@@ -1398,7 +556,7 @@
                 document.getElementById('total-devices').textContent = devices.length;
                 document.getElementById('total-projects').textContent = projects.length;
                 document.getElementById('total-vendors').textContent = vendors.length;
-                document.getElementById('active-devices').textContent = 
+                document.getElementById('active-devices').textContent =
                     devices.filter(d => d.status === 'active').length;
 
             } catch (error) {
@@ -1408,6 +566,9 @@
 
         const loadSectionData = async (section) => {
             switch (section) {
+                case 'projects':
+                    await loadProjects();
+                    break;
                 case 'vendors':
                     await loadVendors();
                     break;
@@ -1417,11 +578,14 @@
                 case 'item-types':
                     await loadItemTypes();
                     break;
+                case 'messaging-policies':
+                    await loadMessagingPolicies();
+                    break;
                 case 'communication-policies':
                     await loadCommunicationPolicies();
                     break;
-                case 'projects':
-                    await loadProjects();
+                case 'space-types':
+                    await loadSpaceTypes();
                     break;
                 case 'devices':
                     await loadDevices();
@@ -1429,6 +593,102 @@
                 case 'device-tracking':
                     await initializeMap();
                     break;
+            }
+        };
+
+        // Map functions
+        const initializeMap = async () => {
+            if (!map) {
+                map = new mapboxgl.Map({
+                    container: 'map',
+                    style: 'mapbox://styles/mapbox/streets-v11',
+                    center: [-74.5, 40],
+                    zoom: 9
+                });
+
+                map.addControl(new mapboxgl.NavigationControl());
+            }
+
+            await loadDeviceLocations();
+        };
+
+        const loadDeviceLocations = async () => {
+            try {
+                const devices = await apiRequest('/devices/locations');
+
+                // Clear existing markers
+                const existingMarkers = document.querySelectorAll('.mapboxgl-marker');
+                existingMarkers.forEach(marker => marker.remove());
+
+                devices.forEach(device => {
+                    if (device.location.latitude && device.location.longitude) {
+                        const el = document.createElement('div');
+                        el.className = `device-marker ${device.status}`;
+                        el.innerHTML = '<i class="fas fa-microchip"></i>';
+
+                        const popup = new mapboxgl.Popup({ offset: 25 })
+                            .setHTML(`
+                                <div class="device-popup">
+                                    <h4>${device.name}</h4>
+                                    <p><strong>ID:</strong> ${device.deviceId}</p>
+                                    <p><strong>Status:</strong> ${device.status}</p>
+                                    <p><strong>Type:</strong> ${device.itemType ? device.itemType.name : 'N/A'}</p>
+                                    <p><strong>Last Updated:</strong> ${new Date(device.location.lastUpdated).toLocaleString()}</p>
+                                </div>
+                            `);
+
+                        new mapboxgl.Marker(el)
+                            .setLngLat([device.location.longitude, device.location.latitude])
+                            .setPopup(popup)
+                            .addTo(map);
+                    }
+                });
+
+                if (devices.length > 0) {
+                    const coordinates = devices
+                        .filter(d => d.location.latitude && d.location.longitude)
+                        .map(d => [d.location.longitude, d.location.latitude]);
+
+                    if (coordinates.length > 0) {
+                        const bounds = new mapboxgl.LngLatBounds();
+                        coordinates.forEach(coord => bounds.extend(coord));
+                        map.fitBounds(bounds, { padding: 50 });
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error loading device locations:', error);
+            }
+        };
+
+        // Data loading functions for each section
+        const loadProjects = async () => {
+            try {
+                const projects = await apiRequest('/projects');
+                const tbody = document.querySelector('#projects-table tbody');
+                tbody.innerHTML = '';
+
+                projects.forEach(project => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${project.name}</td>
+                        <td>${project.description || '-'}</td>
+                        <td>${project.owner ? project.owner.username : '-'}</td>
+                        <td><span class="status ${project.status}">${project.status}</span></td>
+                        <td>${new Date(project.createdAt).toLocaleDateString()}</td>
+                        <td>
+                            <button class="btn btn-sm btn-secondary" onclick="editProject('${project._id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteProject('${project._id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading projects:', error);
             }
         };
 
@@ -1442,14 +702,14 @@
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${vendor.name}</td>
-                        <td>${vendor.email || '-'}</td>
-                        <td>${vendor.phone || '-'}</td>
+                        <td>${vendor.contactEmail || '-'}</td>
+                        <td>${vendor.contactPhone || '-'}</td>
                         <td>${vendor.website || '-'}</td>
                         <td>
-                            <button class="btn btn-sm btn-secondary" onclick="editVendor('${vendor.id}')">
+                            <button class="btn btn-sm btn-secondary" onclick="editVendor('${vendor._id}')">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteVendor('${vendor.id}')">
+                            <button class="btn btn-sm btn-danger" onclick="deleteVendor('${vendor._id}')">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
@@ -1469,10 +729,10 @@
 
                 parameters.forEach(param => {
                     const row = document.createElement('tr');
-                    const range = param.minValue !== undefined && param.maxValue !== undefined 
-                        ? `${param.minValue} - ${param.maxValue}` 
+                    const range = param.minValue !== undefined && param.maxValue !== undefined
+                        ? `${param.minValue} - ${param.maxValue}`
                         : '-';
-                    
+
                     row.innerHTML = `
                         <td>${param.name}</td>
                         <td>${param.dataType}</td>
@@ -1480,10 +740,10 @@
                         <td>${range}</td>
                         <td>${param.description || '-'}</td>
                         <td>
-                            <button class="btn btn-sm btn-secondary" onclick="editParameter('${param.id}')">
+                            <button class="btn btn-sm btn-secondary" onclick="editParameter('${param._id}')">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteParameter('${param.id}')">
+                            <button class="btn btn-sm btn-danger" onclick="deleteParameter('${param._id}')">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
@@ -1506,13 +766,13 @@
                     row.innerHTML = `
                         <td>${itemType.name}</td>
                         <td>${itemType.description || '-'}</td>
-                        <td>${itemType.vendor || '-'}</td>
+                        <td>${itemType.vendor ? itemType.vendor.name : '-'}</td>
                         <td>${itemType.parameters ? itemType.parameters.length : 0} parameters</td>
                         <td>
-                            <button class="btn btn-sm btn-secondary" onclick="editItemType('${itemType.id}')">
+                            <button class="btn btn-sm btn-secondary" onclick="editItemType('${itemType._id}')">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteItemType('${itemType.id}')">
+                            <button class="btn btn-sm btn-danger" onclick="deleteItemType('${itemType._id}')">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
@@ -1521,6 +781,36 @@
                 });
             } catch (error) {
                 console.error('Error loading item types:', error);
+            }
+        };
+
+        const loadMessagingPolicies = async () => {
+            try {
+                const policies = await apiRequest('/messaging-policies');
+                const tbody = document.querySelector('#messaging-policies-table tbody');
+                tbody.innerHTML = '';
+
+                policies.forEach(policy => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${policy.name}</td>
+                        <td>${policy.protocol}</td>
+                        <td>${policy.topicStructure || '-'}</td>
+                        <td>${policy.qos}</td>
+                        <td>${policy.messageFormat}</td>
+                        <td>
+                            <button class="btn btn-sm btn-secondary" onclick="editMessagingPolicy('${policy._id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteMessagingPolicy('${policy._id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading messaging policies:', error);
             }
         };
 
@@ -1535,15 +825,14 @@
                     row.innerHTML = `
                         <td>${policy.name}</td>
                         <td>${policy.description || '-'}</td>
-                        <td>${policy.protocol}</td>
-                        <td>${policy.qos}</td>
-                        <td>${policy.messageFormat}</td>
-                        <td>${policy.topicStructure || '-'}</td>
+                        <td>${policy.messagingPolicies ? policy.messagingPolicies.length : 0} policies</td>
+                        <td>${policy.connectionTimeout}s</td>
+                        <td>${policy.keepAlive}s</td>
                         <td>
-                            <button class="btn btn-sm btn-secondary" onclick="editCommunicationPolicy('${policy.id}')">
+                            <button class="btn btn-sm btn-secondary" onclick="editCommunicationPolicy('${policy._id}')">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteCommunicationPolicy('${policy.id}')">
+                            <button class="btn btn-sm btn-danger" onclick="deleteCommunicationPolicy('${policy._id}')">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
@@ -1554,24 +843,30 @@
                 console.error('Error loading communication policies:', error);
             }
         };
+
+        const loadSpaceTypes = async () => {
             try {
-                const projects = await apiRequest('/projects');
-                const tbody = document.querySelector('#projects-table tbody');
+                const spaceTypes = await apiRequest('/space-types');
+                const tbody = document.querySelector('#space-types-table tbody');
                 tbody.innerHTML = '';
 
-                projects.forEach(project => {
+                spaceTypes.forEach(spaceType => {
                     const row = document.createElement('tr');
+                    const coordinates = spaceType.coordinates && spaceType.coordinates.latitude && spaceType.coordinates.longitude
+                        ? `${spaceType.coordinates.latitude}, ${spaceType.coordinates.longitude}`
+                        : '-';
+
                     row.innerHTML = `
-                        <td>${project.name}</td>
-                        <td>${project.description || '-'}</td>
-                        <td>Demo User</td>
-                        <td><span class="status ${project.status}">${project.status}</span></td>
-                        <td>${new Date().toLocaleDateString()}</td>
+                        <td>${spaceType.name}</td>
+                        <td>${spaceType.description || '-'}</td>
+                        <td>${coordinates}</td>
+                        <td>${spaceType.area || '-'}</td>
+                        <td>${spaceType.capacity || '-'}</td>
                         <td>
-                            <button class="btn btn-sm btn-secondary" onclick="editProject('${project.id}')">
+                            <button class="btn btn-sm btn-secondary" onclick="editSpaceType('${spaceType._id}')">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteProject('${project.id}')">
+                            <button class="btn btn-sm btn-danger" onclick="deleteSpaceType('${spaceType._id}')">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
@@ -1579,7 +874,7 @@
                     tbody.appendChild(row);
                 });
             } catch (error) {
-                console.error('Error loading projects:', error);
+                console.error('Error loading space types:', error);
             }
         };
 
@@ -1594,23 +889,23 @@
                     const location = device.location && device.location.latitude && device.location.longitude
                         ? `${device.location.latitude.toFixed(4)}, ${device.location.longitude.toFixed(4)}`
                         : '-';
-                    
+
                     row.innerHTML = `
                         <td>${device.deviceId}</td>
                         <td>${device.name}</td>
-                        <td>Demo Project</td>
-                        <td>Temperature Sensor</td>
+                        <td>${device.project ? device.project.name : '-'}</td>
+                        <td>${device.itemType ? device.itemType.name : '-'}</td>
                         <td><span class="status ${device.status}">${device.status}</span></td>
                         <td>${location}</td>
-                        <td>${new Date().toLocaleString()}</td>
+                        <td>${new Date(device.lastSeen).toLocaleString()}</td>
                         <td>
-                            <button class="btn btn-sm btn-primary" onclick="viewDevice('${device.id}')">
+                            <button class="btn btn-sm btn-primary" onclick="viewDevice('${device._id}')">
                                 <i class="fas fa-eye"></i>
                             </button>
-                            <button class="btn btn-sm btn-secondary" onclick="editDevice('${device.id}')">
+                            <button class="btn btn-sm btn-secondary" onclick="editDevice('${device._id}')">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteDevice('${device.id}')">
+                            <button class="btn btn-sm btn-danger" onclick="requestDeviceDelete('${device._id}')">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
@@ -1620,21 +915,6 @@
             } catch (error) {
                 console.error('Error loading devices:', error);
             }
-        };
-
-        // Map functions (simplified for demo)
-        const initializeMap = async () => {
-            const mapContainer = document.getElementById('map');
-            mapContainer.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f0f4f8; color: #4a5568;">
-                    <div style="text-align: center;">
-                        <i class="fas fa-map fa-3x" style="margin-bottom: 20px; opacity: 0.5;"></i>
-                        <h3>Map View</h3>
-                        <p>Interactive device tracking map would appear here</p>
-                        <p style="font-size: 14px; opacity: 0.7;">(Requires Mapbox API key)</p>
-                    </div>
-                </div>
-            `;
         };
 
         // Modal functions
@@ -1650,29 +930,647 @@
             document.getElementById('modal').style.display = 'none';
         };
 
-        // Placeholder functions
-        const editProject = (id) => showNotification('Edit functionality to be implemented', 'info');
-        const deleteProject = (id) => showNotification('Delete functionality to be implemented', 'info');
-        const editVendor = (id) => showNotification('Edit vendor functionality to be implemented', 'info');
-        const deleteVendor = (id) => showNotification('Delete vendor functionality to be implemented', 'info');
-        const editParameter = (id) => showNotification('Edit parameter functionality to be implemented', 'info');
-        const deleteParameter = (id) => showNotification('Delete parameter functionality to be implemented', 'info');
-        const editItemType = (id) => showNotification('Edit item type functionality to be implemented', 'info');
-        const deleteItemType = (id) => showNotification('Delete item type functionality to be implemented', 'info');
-        const editCommunicationPolicy = (id) => showNotification('Edit communication policy functionality to be implemented', 'info');
-        const deleteCommunicationPolicy = (id) => showNotification('Delete communication policy functionality to be implemented', 'info');
-        const viewDevice = (id) => showNotification('View device functionality to be implemented', 'info');
-        const editDevice = (id) => showNotification('Edit device functionality to be implemented', 'info');
-        const deleteDevice = (id) => showNotification('Delete device functionality to be implemented', 'info');
-        const refreshAllData = () => {
-            showNotification('Refreshing all data...', 'info');
-            loadDashboardData();
+        const showOtpModal = () => {
+            document.getElementById('otp-modal').style.display = 'block';
+        };
+
+        const hideOtpModal = () => {
+            document.getElementById('otp-modal').style.display = 'none';
+            currentOtpId = null;
+            currentAction = null;
+        };
+
+        // Form generation functions
+        const generateProjectForm = (project = null) => {
+            return `
+                <form id="project-form">
+                    <div class="form-group">
+                        <label for="project-name">Project Name</label>
+                        <input type="text" id="project-name" name="name" value="${project ? project.name : ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="project-description">Description</label>
+                        <textarea id="project-description" name="description" rows="3">${project ? project.description || '' : ''}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="project-status">Status</label>
+                        <select id="project-status" name="status" required>
+                            <option value="active" ${project && project.status === 'active' ? 'selected' : ''}>Active</option>
+                            <option value="inactive" ${project && project.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">${project ? 'Update' : 'Create'} Project</button>
+                        <button type="button" onclick="hideModal()" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </form>
+            `;
+        };
+
+        const generateVendorForm = (vendor = null) => {
+            return `
+                <form id="vendor-form">
+                    <div class="form-group">
+                        <label for="vendor-name">Vendor Name</label>
+                        <input type="text" id="vendor-name" name="name" value="${vendor ? vendor.name : ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="vendor-description">Description</label>
+                        <textarea id="vendor-description" name="description" rows="3">${vendor ? vendor.description || '' : ''}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="vendor-email">Contact Email</label>
+                        <input type="email" id="vendor-email" name="contactEmail" value="${vendor ? vendor.contactEmail || '' : ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="vendor-phone">Contact Phone</label>
+                        <input type="tel" id="vendor-phone" name="contactPhone" value="${vendor ? vendor.contactPhone || '' : ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="vendor-address">Address</label>
+                        <textarea id="vendor-address" name="address" rows="2">${vendor ? vendor.address || '' : ''}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="vendor-website">Website</label>
+                        <input type="url" id="vendor-website" name="website" value="${vendor ? vendor.website || '' : ''}">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">${vendor ? 'Update' : 'Create'} Vendor</button>
+                        <button type="button" onclick="hideModal()" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </form>
+            `;
+        };
+
+        const generateParameterForm = (parameter = null) => {
+            return `
+                <form id="parameter-form">
+                    <div class="form-group">
+                        <label for="param-name">Parameter Name</label>
+                        <input type="text" id="param-name" name="name" value="${parameter ? parameter.name : ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="param-datatype">Data Type</label>
+                        <select id="param-datatype" name="dataType" required>
+                            <option value="string" ${parameter && parameter.dataType === 'string' ? 'selected' : ''}>String</option>
+                            <option value="number" ${parameter && parameter.dataType === 'number' ? 'selected' : ''}>Number</option>
+                            <option value="boolean" ${parameter && parameter.dataType === 'boolean' ? 'selected' : ''}>Boolean</option>
+                            <option value="json" ${parameter && parameter.dataType === 'json' ? 'selected' : ''}>JSON</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="param-unit">Unit</label>
+                        <input type="text" id="param-unit" name="unit" value="${parameter ? parameter.unit || '' : ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="param-minvalue">Min Value</label>
+                        <input type="number" id="param-minvalue" name="minValue" value="${parameter ? parameter.minValue || '' : ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="param-maxvalue">Max Value</label>
+                        <input type="number" id="param-maxvalue" name="maxValue" value="${parameter ? parameter.maxValue || '' : ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="param-description">Description</label>
+                        <textarea id="param-description" name="description" rows="3">${parameter ? parameter.description || '' : ''}</textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">${parameter ? 'Update' : 'Create'} Parameter</button>
+                        <button type="button" onclick="hideModal()" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </form>
+            `;
+        };
+
+        const generateItemTypeForm = async (itemType = null) => {
+            try {
+                const [vendors, parameters] = await Promise.all([
+                    apiRequest('/vendors'),
+                    apiRequest('/parameters')
+                ]);
+
+                return `
+                    <form id="item-type-form">
+                        <div class="form-group">
+                            <label for="itemtype-name">Item Type Name</label>
+                            <input type="text" id="itemtype-name" name="name" value="${itemType ? itemType.name : ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="itemtype-description">Description</label>
+                            <textarea id="itemtype-description" name="description" rows="3">${itemType ? itemType.description || '' : ''}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="itemtype-vendor">Vendor</label>
+                            <select id="itemtype-vendor" name="vendor" required>
+                                <option value="">Select Vendor</option>
+                                ${vendors.map(v => `<option value="${v._id}" ${itemType && itemType.vendor && itemType.vendor._id === v._id ? 'selected' : ''}>${v.name}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Parameters</label>
+                            <div class="parameter-checkboxes">
+                                ${parameters.map(p => `
+                                    <label style="display: block; margin-bottom: 5px;">
+                                        <input type="checkbox" name="parameters" value="${p._id}" ${itemType && itemType.parameters && itemType.parameters.some(param => param._id === p._id) ? 'checked' : ''}> ${p.name} (${p.dataType})
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">${itemType ? 'Update' : 'Create'} Item Type</button>
+                            <button type="button" onclick="hideModal()" class="btn btn-secondary">Cancel</button>
+                        </div>
+                    </form>
+                `;
+            } catch (error) {
+                console.error('Error generating item type form:', error);
+                return '<p>Error loading form data</p>';
+            }
+        };
+
+        const generateMessagingPolicyForm = (policy = null) => {
+            return `
+                <form id="messaging-policy-form">
+                    <div class="form-group">
+                        <label for="msg-policy-name">Policy Name</label>
+                        <input type="text" id="msg-policy-name" name="name" value="${policy ? policy.name : ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="msg-policy-protocol">Protocol</label>
+                        <select id="msg-policy-protocol" name="protocol" required>
+                            <option value="MQTT" ${policy && policy.protocol === 'MQTT' ? 'selected' : ''}>MQTT</option>
+                            <option value="HTTP" ${policy && policy.protocol === 'HTTP' ? 'selected' : ''}>HTTP</option>
+                            <option value="WebSocket" ${policy && policy.protocol === 'WebSocket' ? 'selected' : ''}>WebSocket</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="msg-policy-topic">Topic Structure</label>
+                        <input type="text" id="msg-policy-topic" name="topicStructure" value="${policy ? policy.topicStructure || '' : ''}" placeholder="e.g., device/{deviceId}/data">
+                    </div>
+                    <div class="form-group">
+                        <label for="msg-policy-qos">QoS Level</label>
+                        <select id="msg-policy-qos" name="qos">
+                            <option value="0" ${policy && policy.qos === 0 ? 'selected' : ''}>0 - At most once</option>
+                            <option value="1" ${policy && policy.qos === 1 ? 'selected' : ''}>1 - At least once</option>
+                            <option value="2" ${policy && policy.qos === 2 ? 'selected' : ''}>2 - Exactly once</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="msg-policy-retain">
+                            <input type="checkbox" id="msg-policy-retain" name="retainMessage" ${policy && policy.retainMessage ? 'checked' : ''}>
+                            Retain Message
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label for="msg-policy-format">Message Format</label>
+                        <select id="msg-policy-format" name="messageFormat">
+                            <option value="JSON" ${policy && policy.messageFormat === 'JSON' ? 'selected' : ''}>JSON</option>
+                            <option value="XML" ${policy && policy.messageFormat === 'XML' ? 'selected' : ''}>XML</option>
+                            <option value="Binary" ${policy && policy.messageFormat === 'Binary' ? 'selected' : ''}>Binary</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">${policy ? 'Update' : 'Create'} Messaging Policy</button>
+                        <button type="button" onclick="hideModal()" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </form>
+            `;
+        };
+
+        const generateCommunicationPolicyForm = async (policy = null) => {
+            try {
+                const messagingPolicies = await apiRequest('/messaging-policies');
+
+                return `
+                    <form id="communication-policy-form">
+                        <div class="form-group">
+                            <label for="comm-policy-name">Policy Name</label>
+                            <input type="text" id="comm-policy-name" name="name" value="${policy ? policy.name : ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="comm-policy-description">Description</label>
+                            <textarea id="comm-policy-description" name="description" rows="3">${policy ? policy.description || '' : ''}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Messaging Policies</label>
+                            <div class="messaging-policy-checkboxes">
+                                ${messagingPolicies.map(mp => `
+                                    <label style="display: block; margin-bottom: 5px;">
+                                        <input type="checkbox" name="messagingPolicies" value="${mp._id}" ${policy && policy.messagingPolicies && policy.messagingPolicies.some(msgPolicy => msgPolicy._id === mp._id) ? 'checked' : ''}> ${mp.name} (${mp.protocol})
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="comm-policy-timeout">Connection Timeout (seconds)</label>
+                            <input type="number" id="comm-policy-timeout" name="connectionTimeout" value="${policy ? policy.connectionTimeout || 30 : 30}" min="5" max="300">
+                        </div>
+                        <div class="form-group">
+                            <label for="comm-policy-keepalive">Keep Alive (seconds)</label>
+                            <input type="number" id="comm-policy-keepalive" name="keepAlive" value="${policy ? policy.keepAlive || 60 : 60}" min="10" max="1800">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">${policy ? 'Update' : 'Create'} Communication Policy</button>
+                            <button type="button" onclick="hideModal()" class="btn btn-secondary">Cancel</button>
+                        </div>
+                    </form>
+                `;
+            } catch (error) {
+                console.error('Error generating communication policy form:', error);
+                return '<p>Error loading form data</p>';
+            }
+        };
+
+        const generateSpaceTypeForm = (spaceType = null) => {
+            return `
+                <form id="space-type-form">
+                    <div class="form-group">
+                        <label for="space-name">Space Type Name</label>
+                        <input type="text" id="space-name" name="name" value="${spaceType ? spaceType.name : ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="space-description">Description</label>
+                        <textarea id="space-description" name="description" rows="3">${spaceType ? spaceType.description || '' : ''}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="space-latitude">Latitude</label>
+                        <input type="number" step="any" id="space-latitude" name="latitude" value="${spaceType && spaceType.coordinates ? spaceType.coordinates.latitude || '' : ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="space-longitude">Longitude</label>
+                        <input type="number" step="any" id="space-longitude" name="longitude" value="${spaceType && spaceType.coordinates ? spaceType.coordinates.longitude || '' : ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="space-area">Area (sq ft)</label>
+                        <input type="number" id="space-area" name="area" value="${spaceType ? spaceType.area || '' : ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="space-capacity">Capacity</label>
+                        <input type="number" id="space-capacity" name="capacity" value="${spaceType ? spaceType.capacity || '' : ''}">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">${spaceType ? 'Update' : 'Create'} Space Type</button>
+                        <button type="button" onclick="hideModal()" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </form>
+            `;
+        };
+
+        const generateDeviceForm = async (device = null, isMultiple = false) => {
+            try {
+                const [projects, itemTypes, vendors, commPolicies, spaceTypes] = await Promise.all([
+                    apiRequest('/projects'),
+                    apiRequest('/item-types'),
+                    apiRequest('/vendors'),
+                    apiRequest('/communication-policies'),
+                    apiRequest('/space-types')
+                ]);
+
+                const deviceCount = isMultiple ? `
+                    <div class="form-group">
+                        <label for="device-count">Number of Devices</label>
+                        <input type="number" id="device-count" name="deviceCount" min="1" max="100" value="1" required>
+                    </div>
+                ` : '';
+
+                return `
+                    <form id="device-form">
+                        ${deviceCount}
+                        <div class="form-group">
+                            <label for="device-name">Device Name ${isMultiple ? '(Base Name)' : ''}</label>
+                            <input type="text" id="device-name" name="name" value="${device ? device.name : ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="device-project">Project</label>
+                            <select id="device-project" name="project" required>
+                                <option value="">Select Project</option>
+                                ${projects.map(p => `<option value="${p._id}" ${device && device.project && device.project._id === p._id ? 'selected' : ''}>${p.name}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="device-itemtype">Item Type</label>
+                            <select id="device-itemtype" name="itemType" required>
+                                <option value="">Select Item Type</option>
+                                ${itemTypes.map(it => `<option value="${it._id}" ${device && device.itemType && device.itemType._id === it._id ? 'selected' : ''}>${it.name}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="device-vendor">Vendor</label>
+                            <select id="device-vendor" name="vendor" required>
+                                <option value="">Select Vendor</option>
+                                ${vendors.map(v => `<option value="${v._id}" ${device && device.vendor && device.vendor._id === v._id ? 'selected' : ''}>${v.name}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="device-commpolicy">Communication Policy</label>
+                            <select id="device-commpolicy" name="communicationPolicy">
+                                <option value="">Select Policy (Optional)</option>
+                                ${commPolicies.map(cp => `<option value="${cp._id}" ${device && device.communicationPolicy && device.communicationPolicy._id === cp._id ? 'selected' : ''}>${cp.name}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="device-spacetype">Space Type</label>
+                            <select id="device-spacetype" name="spaceType">
+                                <option value="">Select Space Type (Optional)</option>
+                                ${spaceTypes.map(st => `<option value="${st._id}" ${device && device.spaceType && device.spaceType._id === st._id ? 'selected' : ''}>${st.name}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="device-latitude">Initial Latitude</label>
+                            <input type="number" step="any" id="device-latitude" name="latitude" value="${device && device.location ? device.location.latitude || '' : ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="device-longitude">Initial Longitude</label>
+                            <input type="number" step="any" id="device-longitude" name="longitude" value="${device && device.location ? device.location.longitude || '' : ''}">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">${device ? 'Update' : 'Create'} Device${isMultiple ? 's' : ''}</button>
+                            <button type="button" onclick="hideModal()" class="btn btn-secondary">Cancel</button>
+                        </div>
+                    </form>
+                `;
+            } catch (error) {
+                console.error('Error generating device form:', error);
+                return '<p>Error loading form data</p>';
+            }
+        };
+
+        // Action functions
+        const addProject = () => {
+            showModal('Add New Project', generateProjectForm());
+        };
+
+        const addVendor = () => {
+            showModal('Add New Vendor', generateVendorForm());
+        };
+
+        const addParameter = () => {
+            showModal('Add New Parameter', generateParameterForm());
+        };
+
+        const addItemType = async () => {
+            const form = await generateItemTypeForm();
+            showModal('Add New Item Type', form);
+        };
+
+        const addMessagingPolicy = () => {
+            showModal('Add New Messaging Policy', generateMessagingPolicyForm());
+        };
+
+        const addCommunicationPolicy = async () => {
+            const form = await generateCommunicationPolicyForm();
+            showModal('Add New Communication Policy', form);
+        };
+
+        const addSpaceType = () => {
+            showModal('Add New Space Type', generateSpaceTypeForm());
+        };
+
+        const addDevice = async () => {
+            const form = await generateDeviceForm();
+            showModal('Add New Device', form);
+        };
+
+        const addMultipleDevices = async () => {
+            const form = await generateDeviceForm(null, true);
+            showModal('Create Multiple Devices', form);
+        };
+
+        const requestDeviceDelete = async (deviceId) => {
+            if (currentUser.role !== 'admin') {
+                showNotification('Only admins can delete devices', 'error');
+                return;
+            }
+
+            try {
+                const response = await apiRequest(`/devices/${deviceId}/delete-otp`, {
+                    method: 'DELETE'
+                });
+
+                currentOtpId = response.otpId;
+                currentAction = 'delete';
+                showOtpModal();
+                showNotification('OTP sent to admin email', 'info');
+            } catch (error) {
+                console.error('Error requesting device deletion:', error);
+            }
+        };
+
+        const viewDevice = async (deviceId) => {
+            try {
+                const device = await apiRequest(`/devices/${deviceId}`);
+                const content = `
+                    <div class="device-details">
+                        <div class="detail-row">
+                            <strong>Device ID:</strong> ${device.deviceId}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Name:</strong> ${device.name}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Status:</strong> <span class="status ${device.status}">${device.status}</span>
+                        </div>
+                        <div class="detail-row">
+                            <strong>Project:</strong> ${device.project ? device.project.name : 'N/A'}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Item Type:</strong> ${device.itemType ? device.itemType.name : 'N/A'}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Vendor:</strong> ${device.vendor ? device.vendor.name : 'N/A'}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Certificate ID:</strong> ${device.certificate ? device.certificate.certificateId : 'N/A'}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Firmware Version:</strong> ${device.firmware ? device.firmware.version : 'N/A'}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Location:</strong> ${device.location && device.location.latitude && device.location.longitude ? `${device.location.latitude}, ${device.location.longitude}` : 'N/A'}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Created:</strong> ${new Date(device.createdAt).toLocaleString()}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Last Seen:</strong> ${new Date(device.lastSeen).toLocaleString()}
+                        </div>
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <button onclick="hideModal()" class="btn btn-secondary">Close</button>
+                    </div>
+                `;
+                showModal('Device Details', content);
+            } catch (error) {
+                console.error('Error loading device details:', error);
+            }
+        };
+
+        // Placeholder edit functions (you can implement these based on your needs)
+        const editProject = (id) => { showNotification('Edit functionality to be implemented', 'info'); };
+        const editVendor = (id) => { showNotification('Edit functionality to be implemented', 'info'); };
+        const editParameter = (id) => { showNotification('Edit functionality to be implemented', 'info'); };
+        const editItemType = (id) => { showNotification('Edit functionality to be implemented', 'info'); };
+        const editMessagingPolicy = (id) => { showNotification('Edit functionality to be implemented', 'info'); };
+        const editCommunicationPolicy = (id) => { showNotification('Edit functionality to be implemented', 'info'); };
+        const editSpaceType = (id) => { showNotification('Edit functionality to be implemented', 'info'); };
+        const editDevice = (id) => { showNotification('Edit functionality to be implemented', 'info'); };
+
+        // Placeholder delete functions
+        const deleteProject = (id) => { showNotification('Delete functionality to be implemented', 'info'); };
+        const deleteVendor = (id) => { showNotification('Delete functionality to be implemented', 'info'); };
+        const deleteParameter = (id) => { showNotification('Delete functionality to be implemented', 'info'); };
+        const deleteItemType = (id) => { showNotification('Delete functionality to be implemented', 'info'); };
+        const deleteMessagingPolicy = (id) => { showNotification('Delete functionality to be implemented', 'info'); };
+        const deleteCommunicationPolicy = (id) => { showNotification('Delete functionality to be implemented', 'info'); };
+        const deleteSpaceType = (id) => { showNotification('Delete functionality to be implemented', 'info'); };
+
+        // Form submission handlers
+        const handleFormSubmission = (formId, endpoint, method = 'POST', callback = null) => {
+            document.addEventListener('submit', async (e) => {
+                if (e.target.id === formId) {
+                    e.preventDefault();
+
+                    const formData = new FormData(e.target);
+                    const data = Object.fromEntries(formData.entries());
+
+                    // Handle checkboxes for multiple selections
+                    if (formId === 'item-type-form') {
+                        const parameterCheckboxes = e.target.querySelectorAll('input[name="parameters"]:checked');
+                        data.parameters = Array.from(parameterCheckboxes).map(cb => cb.value);
+                    }
+
+                    if (formId === 'communication-policy-form') {
+                        const msgPolicyCheckboxes = e.target.querySelectorAll('input[name="messagingPolicies"]:checked');
+                        data.messagingPolicies = Array.from(msgPolicyCheckboxes).map(cb => cb.value);
+                    }
+
+                    // Handle special formatting
+                    if (formId === 'space-type-form') {
+                        data.coordinates = {
+                            latitude: data.latitude ? parseFloat(data.latitude) : undefined,
+                            longitude: data.longitude ? parseFloat(data.longitude) : undefined
+                        };
+                        delete data.latitude;
+                        delete data.longitude;
+                    }
+
+                    if (formId === 'device-form') {
+                        if (data.latitude && data.longitude) {
+                            data.location = {
+                                latitude: parseFloat(data.latitude),
+                                longitude: parseFloat(data.longitude)
+                            };
+                        }
+                        delete data.latitude;
+                        delete data.longitude;
+
+                        if (data.deviceCount) {
+                            // Multi-device creation
+                            const count = parseInt(data.deviceCount);
+                            const devices = [];
+
+                            for (let i = 1; i <= count; i++) {
+                                const deviceData = { ...data };
+                                delete deviceData.deviceCount;
+                                deviceData.name = `${data.name} ${i.toString().padStart(2, '0')}`;
+                                devices.push(deviceData);
+                            }
+
+                            try {
+                                const response = await apiRequest('/devices/multi-create-otp', {
+                                    method: 'POST',
+                                    body: JSON.stringify({ devices })
+                                });
+
+                                currentOtpId = response.otpId;
+                                currentAction = 'multi-create';
+                                hideModal();
+                                showOtpModal();
+                                showNotification('OTP sent to admin email', 'info');
+                            } catch (error) {
+                                console.error('Error creating multiple devices:', error);
+                            }
+                            return;
+                        } else {
+                            // Single device creation
+                            delete data.deviceCount;
+
+                            try {
+                                const response = await apiRequest('/devices/create-otp', {
+                                    method: 'POST',
+                                    body: JSON.stringify(data)
+                                });
+
+                                currentOtpId = response.otpId;
+                                currentAction = 'create';
+                                hideModal();
+                                showOtpModal();
+                                showNotification('OTP sent to admin email', 'info');
+                            } catch (error) {
+                                console.error('Error creating device:', error);
+                            }
+                            return;
+                        }
+                    }
+
+                    // Handle messaging policy checkbox conversion
+                    if (formId === 'messaging-policy-form') {
+                        data.retainMessage = data.retainMessage === 'on';
+                        data.qos = parseInt(data.qos);
+                    }
+
+                    // Handle communication policy numeric conversions
+                    if (formId === 'communication-policy-form') {
+                        data.connectionTimeout = parseInt(data.connectionTimeout);
+                        data.keepAlive = parseInt(data.keepAlive);
+                    }
+
+                    // Handle parameter numeric conversions
+                    if (formId === 'parameter-form') {
+                        if (data.minValue) data.minValue = parseFloat(data.minValue);
+                        if (data.maxValue) data.maxValue = parseFloat(data.maxValue);
+                    }
+
+                    // Handle space type numeric conversions
+                    if (formId === 'space-type-form') {
+                        if (data.area) data.area = parseFloat(data.area);
+                        if (data.capacity) data.capacity = parseInt(data.capacity);
+                    }
+
+                    try {
+                        await apiRequest(endpoint, {
+                            method,
+                            body: JSON.stringify(data)
+                        });
+
+                        hideModal();
+                        const entityName = formId.replace('-form', '').replace('-', ' ');
+                        showNotification(`${entityName} ${method === 'POST' ? 'created' : 'updated'} successfully!`, 'success');
+
+                        if (callback) callback();
+                        else {
+                            // Reload current section data
+                            const activeSection = document.querySelector('.nav-link.active').dataset.section;
+                            loadSectionData(activeSection);
+                            loadDashboardData(); // Update dashboard stats
+                        }
+                    } catch (error) {
+                        console.error(`Error submitting ${formId}:`, error);
+                    }
+                }
+            });
         };
 
         // Event listeners
         document.addEventListener('DOMContentLoaded', () => {
-            // Show login initially
-            showLogin();
+            // Check if user is already logged in
+            const savedUser = localStorage.getItem('user');
+            if (token && savedUser) {
+                currentUser = JSON.parse(savedUser);
+                showDashboard();
+            } else {
+                showLogin();
+            }
 
             // Login form
             document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -1684,8 +1582,40 @@
             // Register form
             document.getElementById('register-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
-                showNotification('Registration would be processed here', 'info');
-                showLogin();
+                const formData = new FormData(e.target);
+                await register(Object.fromEntries(formData.entries()));
+            });
+
+            // OTP form
+            document.getElementById('otp-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const otp = document.getElementById('otp-input').value;
+
+                try {
+                    let endpoint = '';
+                    if (currentAction === 'create') {
+                        endpoint = '/devices/verify-create';
+                    } else if (currentAction === 'multi-create') {
+                        endpoint = '/devices/verify-multi-create';
+                    } else if (currentAction === 'delete') {
+                        endpoint = '/devices/verify-delete';
+                    }
+
+                    await apiRequest(endpoint, {
+                        method: 'POST',
+                        body: JSON.stringify({ otpId: currentOtpId, otp })
+                    });
+
+                    hideOtpModal();
+                    showNotification(`Device ${currentAction.replace('-', ' ')} completed successfully!`, 'success');
+
+                    // Reload devices and dashboard data
+                    loadSectionData('devices');
+                    loadDashboardData();
+                } catch (error) {
+                    console.error('OTP verification failed:', error);
+                    document.getElementById('otp-input').value = '';
+                }
             });
 
             // Navigation
@@ -1696,81 +1626,397 @@
                 });
             });
 
-            // Mobile menu toggle
-            document.getElementById('mobile-menu-toggle').addEventListener('click', () => {
-                const sidebar = document.getElementById('sidebar');
-                sidebar.classList.toggle('active');
-            });
-
-            // Close mobile menu when clicking on main content
-            document.querySelector('.main-content').addEventListener('click', () => {
-                if (window.innerWidth <= 768) {
-                    document.getElementById('sidebar').classList.remove('active');
-                }
-            });
-
             // Button event listeners
             document.getElementById('show-register').addEventListener('click', (e) => {
                 e.preventDefault();
                 showRegister();
             });
-            
+
             document.getElementById('show-login').addEventListener('click', (e) => {
                 e.preventDefault();
                 showLogin();
             });
-            
+
             document.getElementById('logout-btn').addEventListener('click', logout);
-            
+
             // Add buttons
-            document.getElementById('add-vendor-btn').addEventListener('click', () => {
-                showNotification('Add vendor functionality to be implemented', 'info');
-            });
+            document.getElementById('add-project-btn').addEventListener('click', addProject);
+            document.getElementById('add-vendor-btn').addEventListener('click', addVendor);
+            document.getElementById('add-parameter-btn').addEventListener('click', addParameter);
+            document.getElementById('add-item-type-btn').addEventListener('click', addItemType);
+            document.getElementById('add-messaging-policy-btn').addEventListener('click', addMessagingPolicy);
+            document.getElementById('add-communication-policy-btn').addEventListener('click', addCommunicationPolicy);
+            document.getElementById('add-space-type-btn').addEventListener('click', addSpaceType);
+            document.getElementById('add-device-btn').addEventListener('click', addDevice);
+            document.getElementById('multi-device-btn').addEventListener('click', addMultipleDevices);
 
-            document.getElementById('add-parameter-btn').addEventListener('click', () => {
-                showNotification('Add parameter functionality to be implemented', 'info');
-            });
-
-            document.getElementById('add-item-type-btn').addEventListener('click', () => {
-                showNotification('Add item type functionality to be implemented', 'info');
-            });
-
-            document.getElementById('add-communication-policy-btn').addEventListener('click', () => {
-                showNotification('Add communication policy functionality to be implemented', 'info');
-            });
-
-            document.getElementById('add-project-btn').addEventListener('click', () => {
-                showNotification('Add project functionality to be implemented', 'info');
-            });
-
-            document.getElementById('add-device-btn').addEventListener('click', () => {
-                showNotification('Add device functionality to be implemented', 'info');
-            });
-
-            document.getElementById('multi-device-btn').addEventListener('click', () => {
-                showNotification('Multi-device creation functionality to be implemented', 'info');
-            });
-
-            document.getElementById('refresh-map').addEventListener('click', () => {
-                showNotification('Map refreshed', 'success');
-            });
+            // Map refresh
+            document.getElementById('refresh-map').addEventListener('click', loadDeviceLocations);
 
             // Modal close
             document.querySelector('.close').addEventListener('click', hideModal);
+            document.querySelector('.close-otp').addEventListener('click', hideOtpModal);
+            document.getElementById('cancel-otp').addEventListener('click', hideOtpModal);
 
             // Close modal on outside click
             window.addEventListener('click', (e) => {
                 if (e.target === document.getElementById('modal')) {
                     hideModal();
                 }
-            });
-
-            // Escape key to close modals
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    hideModal();
+                if (e.target === document.getElementById('otp-modal')) {
+                    hideOtpModal();
                 }
             });
+
+            // Form submission handlers - Initialize all form handlers
+            setTimeout(() => {
+                handleFormSubmission('project-form', '/projects');
+                handleFormSubmission('vendor-form', '/vendors');
+                handleFormSubmission('parameter-form', '/parameters');
+                handleFormSubmission('item-type-form', '/item-types');
+                handleFormSubmission('messaging-policy-form', '/messaging-policies');
+                handleFormSubmission('communication-policy-form', '/communication-policies');
+                handleFormSubmission('space-type-form', '/space-types');
+                // Device form is handled separately due to OTP requirements
+            }, 100);
+        });
+
+        // Update device location (for testing/simulation)
+        const updateDeviceLocation = async (deviceId, latitude, longitude) => {
+            try {
+                await apiRequest(`/devices/${deviceId}/location`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ latitude, longitude })
+                });
+                showNotification('Device location updated successfully!', 'success');
+                if (map) {
+                    loadDeviceLocations();
+                }
+            } catch (error) {
+                console.error('Error updating device location:', error);
+            }
+        };
+
+        // Simulate device location updates (for testing)
+        const simulateDeviceMovement = (deviceId) => {
+            const baseLatitude = 40.7128;
+            const baseLongitude = -74.0060;
+            const radius = 0.01; // Approximate 1km radius
+
+            setInterval(() => {
+                const randomLat = baseLatitude + (Math.random() - 0.5) * radius;
+                const randomLng = baseLongitude + (Math.random() - 0.5) * radius;
+                updateDeviceLocation(deviceId, randomLat, randomLng);
+            }, 30000); // Update every 30 seconds
+        };
+
+        // Add styles for device details
+        const additionalCSS = `
+            <style>
+                .device-details {
+                    padding: 20px 0;
+                }
+
+                .detail-row {
+                    margin-bottom: 10px;
+                    padding: 8px 0;
+                    border-bottom: 1px solid #e2e8f0;
+                }
+
+                .detail-row:last-child {
+                    border-bottom: none;
+                }
+
+                .parameter-checkboxes,
+                .messaging-policy-checkboxes {
+                    max-height: 200px;
+                    overflow-y: auto;
+                    border: 1px solid #e2e8f0;
+                    padding: 10px;
+                    border-radius: 5px;
+                }
+
+                .form-group label {
+                    font-weight: 500;
+                    color: #4a5568;
+                }
+
+                .loading-spinner {
+                    display: inline-block;
+                    width: 20px;
+                    height: 20px;
+                    border: 3px solid #f3f3f3;
+                    border-radius: 50%;
+                    border-top-color: #667eea;
+                    animation: spin 1s ease-in-out infinite;
+                }
+
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+
+                .error-message {
+                    color: #e53e3e;
+                    font-size: 14px;
+                    margin-top: 5px;
+                }
+
+                .success-message {
+                    color: #38a169;
+                    font-size: 14px;
+                    margin-top: 5px;
+                }
+
+                .info-message {
+                    color: #3182ce;
+                    font-size: 14px;
+                    margin-top: 5px;
+                }
+
+                /* Mobile responsiveness improvements */
+                @media (max-width: 768px) {
+                    .sidebar {
+                        transform: translateX(-100%);
+                        transition: transform 0.3s ease;
+                        z-index: 1000;
+                    }
+
+                    .sidebar.active {
+                        transform: translateX(0);
+                    }
+
+                    .main-content {
+                        margin-left: 0;
+                        padding: 15px;
+                    }
+
+                    .header-left h1 {
+                        font-size: 18px;
+                    }
+
+                    .device-actions {
+                        flex-direction: column;
+                        gap: 10px;
+                    }
+
+                    .form-actions {
+                        flex-direction: column;
+                        gap: 10px;
+                    }
+
+                    .modal-content {
+                        margin: 10px;
+                        width: calc(100% - 20px);
+                    }
+
+                    .data-table {
+                        font-size: 12px;
+                    }
+
+                    .data-table th,
+                    .data-table td {
+                        padding: 8px 4px;
+                    }
+
+                    .btn-sm {
+                        padding: 4px 8px;
+                        font-size: 12px;
+                    }
+                }
+
+                /* Improved form styling */
+                .form-group {
+                    margin-bottom: 20px;
+                }
+
+                .form-group label {
+                    display: block;
+                    margin-bottom: 5px;
+                    font-weight: 500;
+                    color: #4a5568;
+                }
+
+                .form-group input,
+                .form-group select,
+                .form-group textarea {
+                    width: 100%;
+                    padding: 10px 12px;
+                    border: 1px solid #d2d6dc;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    line-height: 1.5;
+                    color: #374151;
+                    background-color: #fff;
+                    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+                }
+
+                .form-group input:focus,
+                .form-group select:focus,
+                .form-group textarea:focus {
+                    outline: none;
+                    border-color: #667eea;
+                    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                }
+
+                .form-actions {
+                    display: flex;
+                    gap: 10px;
+                    justify-content: flex-end;
+                    margin-top: 30px;
+                    padding-top: 20px;
+                    border-top: 1px solid #e5e7eb;
+                }
+
+                /* Enhanced notification styling */
+                .notification {
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: white;
+                    padding: 16px 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+                    z-index: 9999;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    min-width: 300px;
+                    max-width: 500px;
+                    transform: translateX(100%);
+                    opacity: 0;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    border-left: 4px solid #e5e7eb;
+                }
+
+                .notification.show {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+
+                .notification.success {
+                    border-left-color: #10b981;
+                }
+
+                .notification.error {
+                    border-left-color: #ef4444;
+                }
+
+                .notification.info {
+                    border-left-color: #3b82f6;
+                }
+
+                .notification i {
+                    font-size: 18px;
+                    flex-shrink: 0;
+                }
+
+                .notification.success i {
+                    color: #10b981;
+                }
+
+                .notification.error i {
+                    color: #ef4444;
+                }
+
+                .notification.info i {
+                    color: #3b82f6;
+                }
+
+                /* Loading states */
+                .btn.loading {
+                    position: relative;
+                    color: transparent;
+                }
+
+                .btn.loading::after {
+                    content: "";
+                    position: absolute;
+                    width: 16px;
+                    height: 16px;
+                    top: 50%;
+                    left: 50%;
+                    margin-left: -8px;
+                    margin-top: -8px;
+                    border: 2px solid #ffffff;
+                    border-radius: 50%;
+                    border-top-color: transparent;
+                    animation: spin 1s ease-in-out infinite;
+                }
+            </style>
+        `;
+
+        // Add the additional CSS to the document head
+        document.head.insertAdjacentHTML('beforeend', additionalCSS);
+
+        // Add mobile menu toggle functionality
+        const addMobileMenuToggle = () => {
+            const header = document.querySelector('.header-left');
+            const menuToggle = document.createElement('button');
+            menuToggle.className = 'mobile-menu-toggle';
+            menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+            menuToggle.style.cssText = `
+                display: none;
+                background: none;
+                border: none;
+                color: white;
+                font-size: 20px;
+                margin-right: 15px;
+                cursor: pointer;
+                padding: 5px;
+            `;
+
+            // Add mobile-specific styles
+            const mobileStyles = document.createElement('style');
+            mobileStyles.textContent = `
+                @media (max-width: 768px) {
+                    .mobile-menu-toggle {
+                        display: block !important;
+                    }
+                }
+            `;
+            document.head.appendChild(mobileStyles);
+
+            header.insertBefore(menuToggle, header.firstChild);
+
+            menuToggle.addEventListener('click', () => {
+                const sidebar = document.querySelector('.sidebar');
+                sidebar.classList.toggle('active');
+            });
+
+            // Close sidebar when clicking on main content on mobile
+            document.querySelector('.main-content').addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    document.querySelector('.sidebar').classList.remove('active');
+                }
+            });
+        };
+
+        // Initialize mobile menu after DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            addMobileMenuToggle();
+        });
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + K to focus search (if implemented)
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                // Focus search input if available
+            }
+
+            // Escape to close modals
+            if (e.key === 'Escape') {
+                hideModal();
+                hideOtpModal();
+            }
+
+            // Ctrl/Cmd + Enter to submit forms
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                const activeModal = document.querySelector('.modal:not([style*="display: none"]) form');
+                if (activeModal) {
+                    activeModal.requestSubmit();
+                }
+            }
         });
 
         console.log('IoT Device Management System loaded successfully!');
