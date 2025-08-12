@@ -11,42 +11,58 @@ const multer = require('multer');
 const path = require('path');
 
 const app = express();
+
+// Enhanced CORS configuration
 app.use(cors({
-  origin: "*", // Allow all origins (change to your frontend URL in production)
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  origin: [
+    "http://localhost:3000",
+    "http://localhost:5000", 
+    "http://127.0.0.1:5500",
+    "http://127.0.0.1:3000",
+    "*" // Remove this in production and specify exact origins
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
 }));
-app.use(express.json());
+
+// Handle preflight requests
+app.options('*', cors());
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('uploads'));
 
-// Add this after your other middleware
+// Serve static files from public directory
 app.use(express.static('public'));
 
-// Configure AWS
-AWS.config.update({
-  region: process.env.AWS_REGION || 'ap-south-1',
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-});
+// Configure AWS (only if credentials are provided)
+if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+  AWS.config.update({
+    region: process.env.AWS_REGION || 'ap-south-1',
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+  });
+} else {
+  console.log("⚠️  AWS credentials not provided. AWS IoT features will be disabled.");
+}
 
-const iot = new AWS.Iot();
-const iotData = new AWS.IotData({
-  endpoint: process.env.AWS_IOT_ENDPOINT
-});
+// MongoDB Connection with better error handling
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/iot_management';
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/iot_management', {
+mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
 .then(() => {
-  console.log("✅ MongoDB Connected");
+  console.log("✅ MongoDB Connected to:", MONGODB_URI);
 })
 .catch((err) => {
-  console.error("MongoDB connection error:", err);
+  console.error("❌ MongoDB connection error:", err.message);
+  console.log("💡 Make sure MongoDB is running and accessible");
 });
 
-// Schemas
+// Schemas (keeping your existing schemas)
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
@@ -172,14 +188,20 @@ const SpaceType = mongoose.model('SpaceType', spaceTypeSchema);
 const Device = mongoose.model('Device', deviceSchema);
 const OTP = mongoose.model('OTP', otpSchema);
 
-// Email configuration
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
+// Email configuration (optional)
+let transporter = null;
+if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+  transporter = nodemailer.createTransporter({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  });
+  console.log("✅ Email service configured");
+} else {
+  console.log("⚠️  Email credentials not provided. Email features will be disabled.");
+}
 
 // Middleware
 const authenticateToken = (req, res, next) => {
@@ -212,6 +234,11 @@ const generateOTP = () => {
 };
 
 const sendOTPEmail = async (email, otp, action, deviceName) => {
+  if (!transporter) {
+    console.log(`📧 OTP would be sent to ${email}: ${otp} (Email service disabled)`);
+    return;
+  }
+
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
@@ -225,19 +252,35 @@ const sendOTPEmail = async (email, otp, action, deviceName) => {
     `
   };
 
-  await transporter.sendMail(mailOptions);
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`📧 OTP sent to ${email}`);
+  } catch (error) {
+    console.error('Email send error:', error);
+    throw error;
+  }
 };
 
 const generateDeviceId = () => {
   return 'IOT_' + crypto.randomBytes(8).toString('hex').toUpperCase();
 };
 
+// AWS IoT functions (with fallback)
 const createAWSIoTCertificate = async () => {
-  try {
-    const params = {
-      setAsActive: true
+  if (!process.env.AWS_ACCESS_KEY_ID) {
+    // Mock certificate for demo
+    return {
+      certificateArn: `arn:aws:iot:ap-south-1:123456789012:cert/${crypto.randomUUID()}`,
+      certificateId: crypto.randomUUID(),
+      publicKey: 'MOCK_PUBLIC_KEY',
+      privateKey: 'MOCK_PRIVATE_KEY',
+      certificatePem: 'MOCK_CERTIFICATE_PEM'
     };
+  }
 
+  try {
+    const iot = new AWS.Iot();
+    const params = { setAsActive: true };
     const result = await iot.createKeysAndCertificate(params).promise();
 
     return {
@@ -254,26 +297,26 @@ const createAWSIoTCertificate = async () => {
 };
 
 const createAWSIoTThing = async (deviceId, certificateArn) => {
+  if (!process.env.AWS_ACCESS_KEY_ID) {
+    console.log(`🔧 Mock AWS IoT Thing created for ${deviceId}`);
+    return;
+  }
+
   try {
-    const thingParams = {
-      thingName: deviceId
-    };
+    const iot = new AWS.Iot();
+    
+    // Create thing
+    const thingParams = { thingName: deviceId };
     await iot.createThing(thingParams).promise();
 
+    // Create policy
     const policyDocument = {
       Version: '2012-10-17',
-      Statement: [
-        {
-          Effect: 'Allow',
-          Action: [
-            'iot:Connect',
-            'iot:Publish',
-            'iot:Subscribe',
-            'iot:Receive'
-          ],
-          Resource: `arn:aws:iot:${AWS.config.region}:*:*`
-        }
-      ]
+      Statement: [{
+        Effect: 'Allow',
+        Action: ['iot:Connect', 'iot:Publish', 'iot:Subscribe', 'iot:Receive'],
+        Resource: `arn:aws:iot:${AWS.config.region}:*:*`
+      }]
     };
 
     const policyParams = {
@@ -282,17 +325,17 @@ const createAWSIoTThing = async (deviceId, certificateArn) => {
     };
     await iot.createPolicy(policyParams).promise();
 
-    const attachPolicyParams = {
+    // Attach policy to certificate
+    await iot.attachPolicy({
       policyName: `${deviceId}_Policy`,
       target: certificateArn
-    };
-    await iot.attachPolicy(attachPolicyParams).promise();
+    }).promise();
 
-    const attachThingParams = {
+    // Attach certificate to thing
+    await iot.attachThingPrincipal({
       thingName: deviceId,
       principal: certificateArn
-    };
-    await iot.attachThingPrincipal(attachThingParams).promise();
+    }).promise();
 
   } catch (error) {
     console.error('Error creating AWS IoT Thing:', error);
@@ -311,27 +354,67 @@ const generateFirmware = async (device) => {
   };
 };
 
-// Root route
+// Root route - serve the HTML file
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  const indexPath = path.join(__dirname, 'public', 'index.html');
+  
+  // Check if index.html exists, if not send a simple response
+  const fs = require('fs');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.json({
+      message: 'IoT Device Management API Server',
+      status: 'running',
+      endpoints: {
+        auth: '/api/auth/login, /api/auth/register',
+        vendors: '/api/vendors',
+        parameters: '/api/parameters',
+        projects: '/api/projects',
+        devices: '/api/devices'
+      }
+    });
+  }
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    services: {
+      mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+      email: transporter ? 'configured' : 'disabled',
+      aws: process.env.AWS_ACCESS_KEY_ID ? 'configured' : 'disabled'
+    }
+  });
 });
 
 // Authentication Routes
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { username, email, password, role } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Username or email already exists' });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = new User({
       username,
       email,
       password: hashedPassword,
-      role
+      role: role || 'user'
     });
 
     await user.save();
+    console.log(`✅ New user registered: ${username} (${role || 'user'})`);
     res.status(201).json({ message: 'User created successfully' });
   } catch (error) {
+    console.error('Registration error:', error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -339,9 +422,19 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ message: 'Username and password are required' });
+    }
+
     const user = await User.findOne({ username });
 
-    if (!user || !await bcrypt.compare(password, user.password)) {
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
@@ -351,18 +444,29 @@ app.post('/api/auth/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    res.json({ token, user: { id: user._id, username: user.username, role: user.role } });
+    console.log(`✅ User logged in: ${username} (${user.role})`);
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        role: user.role,
+        email: user.email
+      }
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
 // Project Routes
 app.get('/api/projects', authenticateToken, async (req, res) => {
   try {
-    const projects = await Project.find().populate('owner', 'username');
+    const projects = await Project.find().populate('owner', 'username email');
     res.json(projects);
   } catch (error) {
+    console.error('Projects fetch error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -374,8 +478,14 @@ app.post('/api/projects', authenticateToken, async (req, res) => {
       owner: req.user.id
     });
     await project.save();
+    
+    // Populate the owner before sending response
+    await project.populate('owner', 'username email');
+    
+    console.log(`✅ Project created: ${project.name} by ${req.user.username}`);
     res.status(201).json(project);
   } catch (error) {
+    console.error('Project creation error:', error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -386,8 +496,10 @@ app.delete('/api/projects/:id', authenticateToken, async (req, res) => {
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
+    console.log(`✅ Project deleted: ${project.name}`);
     res.json({ message: 'Project deleted successfully' });
   } catch (error) {
+    console.error('Project deletion error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -395,9 +507,10 @@ app.delete('/api/projects/:id', authenticateToken, async (req, res) => {
 // Vendor Routes
 app.get('/api/vendors', authenticateToken, async (req, res) => {
   try {
-    const vendors = await Vendor.find();
+    const vendors = await Vendor.find().sort({ createdAt: -1 });
     res.json(vendors);
   } catch (error) {
+    console.error('Vendors fetch error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -406,8 +519,10 @@ app.post('/api/vendors', authenticateToken, async (req, res) => {
   try {
     const vendor = new Vendor(req.body);
     await vendor.save();
+    console.log(`✅ Vendor created: ${vendor.name}`);
     res.status(201).json(vendor);
   } catch (error) {
+    console.error('Vendor creation error:', error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -418,8 +533,10 @@ app.delete('/api/vendors/:id', authenticateToken, async (req, res) => {
     if (!vendor) {
       return res.status(404).json({ message: 'Vendor not found' });
     }
+    console.log(`✅ Vendor deleted: ${vendor.name}`);
     res.json({ message: 'Vendor deleted successfully' });
   } catch (error) {
+    console.error('Vendor deletion error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -427,9 +544,10 @@ app.delete('/api/vendors/:id', authenticateToken, async (req, res) => {
 // Parameter Routes
 app.get('/api/parameters', authenticateToken, async (req, res) => {
   try {
-    const parameters = await Parameter.find();
+    const parameters = await Parameter.find().sort({ createdAt: -1 });
     res.json(parameters);
   } catch (error) {
+    console.error('Parameters fetch error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -438,8 +556,10 @@ app.post('/api/parameters', authenticateToken, async (req, res) => {
   try {
     const parameter = new Parameter(req.body);
     await parameter.save();
+    console.log(`✅ Parameter created: ${parameter.name}`);
     res.status(201).json(parameter);
   } catch (error) {
+    console.error('Parameter creation error:', error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -450,8 +570,10 @@ app.delete('/api/parameters/:id', authenticateToken, async (req, res) => {
     if (!parameter) {
       return res.status(404).json({ message: 'Parameter not found' });
     }
+    console.log(`✅ Parameter deleted: ${parameter.name}`);
     res.json({ message: 'Parameter deleted successfully' });
   } catch (error) {
+    console.error('Parameter deletion error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -459,9 +581,13 @@ app.delete('/api/parameters/:id', authenticateToken, async (req, res) => {
 // Item Type Routes
 app.get('/api/item-types', authenticateToken, async (req, res) => {
   try {
-    const itemTypes = await ItemType.find().populate('parameters vendor');
+    const itemTypes = await ItemType.find()
+      .populate('parameters', 'name dataType unit')
+      .populate('vendor', 'name')
+      .sort({ createdAt: -1 });
     res.json(itemTypes);
   } catch (error) {
+    console.error('Item types fetch error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -470,8 +596,11 @@ app.post('/api/item-types', authenticateToken, async (req, res) => {
   try {
     const itemType = new ItemType(req.body);
     await itemType.save();
+    await itemType.populate(['parameters', 'vendor']);
+    console.log(`✅ Item type created: ${itemType.name}`);
     res.status(201).json(itemType);
   } catch (error) {
+    console.error('Item type creation error:', error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -482,8 +611,10 @@ app.delete('/api/item-types/:id', authenticateToken, async (req, res) => {
     if (!itemType) {
       return res.status(404).json({ message: 'Item type not found' });
     }
+    console.log(`✅ Item type deleted: ${itemType.name}`);
     res.json({ message: 'Item type deleted successfully' });
   } catch (error) {
+    console.error('Item type deletion error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -491,9 +622,10 @@ app.delete('/api/item-types/:id', authenticateToken, async (req, res) => {
 // Messaging Policy Routes
 app.get('/api/messaging-policies', authenticateToken, async (req, res) => {
   try {
-    const policies = await MessagingPolicy.find();
+    const policies = await MessagingPolicy.find().sort({ createdAt: -1 });
     res.json(policies);
   } catch (error) {
+    console.error('Messaging policies fetch error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -502,8 +634,10 @@ app.post('/api/messaging-policies', authenticateToken, async (req, res) => {
   try {
     const policy = new MessagingPolicy(req.body);
     await policy.save();
+    console.log(`✅ Messaging policy created: ${policy.name}`);
     res.status(201).json(policy);
   } catch (error) {
+    console.error('Messaging policy creation error:', error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -514,8 +648,10 @@ app.delete('/api/messaging-policies/:id', authenticateToken, async (req, res) =>
     if (!policy) {
       return res.status(404).json({ message: 'Messaging policy not found' });
     }
+    console.log(`✅ Messaging policy deleted: ${policy.name}`);
     res.json({ message: 'Messaging policy deleted successfully' });
   } catch (error) {
+    console.error('Messaging policy deletion error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -523,9 +659,12 @@ app.delete('/api/messaging-policies/:id', authenticateToken, async (req, res) =>
 // Communication Policy Routes
 app.get('/api/communication-policies', authenticateToken, async (req, res) => {
   try {
-    const policies = await CommunicationPolicy.find().populate('messagingPolicies');
+    const policies = await CommunicationPolicy.find()
+      .populate('messagingPolicies', 'name protocol')
+      .sort({ createdAt: -1 });
     res.json(policies);
   } catch (error) {
+    console.error('Communication policies fetch error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -534,8 +673,11 @@ app.post('/api/communication-policies', authenticateToken, async (req, res) => {
   try {
     const policy = new CommunicationPolicy(req.body);
     await policy.save();
+    await policy.populate('messagingPolicies', 'name protocol');
+    console.log(`✅ Communication policy created: ${policy.name}`);
     res.status(201).json(policy);
   } catch (error) {
+    console.error('Communication policy creation error:', error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -546,8 +688,10 @@ app.delete('/api/communication-policies/:id', authenticateToken, async (req, res
     if (!policy) {
       return res.status(404).json({ message: 'Communication policy not found' });
     }
+    console.log(`✅ Communication policy deleted: ${policy.name}`);
     res.json({ message: 'Communication policy deleted successfully' });
   } catch (error) {
+    console.error('Communication policy deletion error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -555,9 +699,10 @@ app.delete('/api/communication-policies/:id', authenticateToken, async (req, res
 // Space Type Routes
 app.get('/api/space-types', authenticateToken, async (req, res) => {
   try {
-    const spaceTypes = await SpaceType.find();
+    const spaceTypes = await SpaceType.find().sort({ createdAt: -1 });
     res.json(spaceTypes);
   } catch (error) {
+    console.error('Space types fetch error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -566,8 +711,10 @@ app.post('/api/space-types', authenticateToken, async (req, res) => {
   try {
     const spaceType = new SpaceType(req.body);
     await spaceType.save();
+    console.log(`✅ Space type created: ${spaceType.name}`);
     res.status(201).json(spaceType);
   } catch (error) {
+    console.error('Space type creation error:', error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -578,8 +725,10 @@ app.delete('/api/space-types/:id', authenticateToken, async (req, res) => {
     if (!spaceType) {
       return res.status(404).json({ message: 'Space type not found' });
     }
+    console.log(`✅ Space type deleted: ${spaceType.name}`);
     res.json({ message: 'Space type deleted successfully' });
   } catch (error) {
+    console.error('Space type deletion error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -588,9 +737,15 @@ app.delete('/api/space-types/:id', authenticateToken, async (req, res) => {
 app.get('/api/devices', authenticateToken, async (req, res) => {
   try {
     const devices = await Device.find()
-      .populate('project itemType vendor communicationPolicy spaceType');
+      .populate('project', 'name description')
+      .populate('itemType', 'name description')
+      .populate('vendor', 'name')
+      .populate('communicationPolicy', 'name')
+      .populate('spaceType', 'name')
+      .sort({ createdAt: -1 });
     res.json(devices);
   } catch (error) {
+    console.error('Devices fetch error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -599,18 +754,24 @@ app.get('/api/devices', authenticateToken, async (req, res) => {
 app.get('/api/devices/:id', authenticateToken, async (req, res) => {
   try {
     const device = await Device.findById(req.params.id)
-      .populate('project itemType vendor communicationPolicy spaceType');
-    
+      .populate('project', 'name description')
+      .populate('itemType', 'name description')
+      .populate('vendor', 'name contactEmail')
+      .populate('communicationPolicy', 'name description')
+      .populate('spaceType', 'name description');
+
     if (!device) {
       return res.status(404).json({ message: 'Device not found' });
     }
-    
+
     res.json(device);
   } catch (error) {
+    console.error('Device fetch error:', error);
     res.status(500).json({ message: error.message });
   }
 });
 
+// Device creation with OTP
 app.post('/api/devices/create-otp', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const otp = generateOTP();
@@ -624,10 +785,15 @@ app.post('/api/devices/create-otp', authenticateToken, requireAdmin, async (req,
     });
 
     await otpRecord.save();
-    await sendOTPEmail(user.email, otp, 'CREATE', req.body.name);
+    
+    if (transporter) {
+      await sendOTPEmail(user.email, otp, 'CREATE', req.body.name);
+    }
 
+    console.log(`📧 OTP created for device creation: ${req.body.name}`);
     res.json({ message: 'OTP sent to admin email', otpId: otpRecord._id });
   } catch (error) {
+    console.error('OTP creation error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -650,7 +816,7 @@ app.post('/api/devices/verify-create', authenticateToken, requireAdmin, async (r
     const deviceData = otpRecord.deviceData;
     const deviceId = generateDeviceId();
 
-    // Create AWS IoT certificate
+    // Create AWS IoT certificate (or mock)
     const certificate = await createAWSIoTCertificate();
 
     // Generate firmware
@@ -665,19 +831,25 @@ app.post('/api/devices/verify-create', authenticateToken, requireAdmin, async (r
 
     await device.save();
 
-    // Create AWS IoT Thing
+    // Create AWS IoT Thing (or mock)
     await createAWSIoTThing(deviceId, certificate.certificateArn);
 
     // Mark OTP as used
     otpRecord.used = true;
     await otpRecord.save();
 
+    // Populate device data before sending response
+    await device.populate(['project', 'itemType', 'vendor', 'communicationPolicy', 'spaceType']);
+
+    console.log(`✅ Device created: ${device.name} (${deviceId})`);
     res.status(201).json(device);
   } catch (error) {
+    console.error('Device creation error:', error);
     res.status(400).json({ message: error.message });
   }
 });
 
+// Multi-device creation
 app.post('/api/devices/multi-create-otp', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { devices } = req.body;
@@ -692,10 +864,15 @@ app.post('/api/devices/multi-create-otp', authenticateToken, requireAdmin, async
     });
 
     await otpRecord.save();
-    await sendOTPEmail(user.email, otp, 'CREATE MULTIPLE', `${devices.length} devices`);
+    
+    if (transporter) {
+      await sendOTPEmail(user.email, otp, 'CREATE MULTIPLE', `${devices.length} devices`);
+    }
 
+    console.log(`📧 OTP created for multi-device creation: ${devices.length} devices`);
     res.json({ message: 'OTP sent to admin email', otpId: otpRecord._id });
   } catch (error) {
+    console.error('Multi-device OTP creation error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -732,6 +909,7 @@ app.post('/api/devices/verify-multi-create', authenticateToken, requireAdmin, as
 
       await device.save();
       await createAWSIoTThing(deviceId, certificate.certificateArn);
+      await device.populate(['project', 'itemType', 'vendor']);
 
       createdDevices.push(device);
     }
@@ -739,12 +917,15 @@ app.post('/api/devices/verify-multi-create', authenticateToken, requireAdmin, as
     otpRecord.used = true;
     await otpRecord.save();
 
+    console.log(`✅ ${createdDevices.length} devices created successfully`);
     res.status(201).json(createdDevices);
   } catch (error) {
+    console.error('Multi-device creation error:', error);
     res.status(400).json({ message: error.message });
   }
 });
 
+// Device deletion with OTP
 app.delete('/api/devices/:id/delete-otp', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const device = await Device.findById(req.params.id);
@@ -763,10 +944,15 @@ app.delete('/api/devices/:id/delete-otp', authenticateToken, requireAdmin, async
     });
 
     await otpRecord.save();
-    await sendOTPEmail(user.email, otp, 'DELETE', device.name);
+    
+    if (transporter) {
+      await sendOTPEmail(user.email, otp, 'DELETE', device.name);
+    }
 
+    console.log(`📧 OTP created for device deletion: ${device.name}`);
     res.json({ message: 'OTP sent to admin email', otpId: otpRecord._id });
   } catch (error) {
+    console.error('Device deletion OTP error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -791,16 +977,19 @@ app.post('/api/devices/verify-delete', authenticateToken, requireAdmin, async (r
       return res.status(404).json({ message: 'Device not found' });
     }
 
-    // Delete from AWS IoT Core
-    try {
-      await iot.deleteThing({ thingName: device.deviceId }).promise();
-      await iot.deletePolicy({ policyName: `${device.deviceId}_Policy` }).promise();
-      await iot.deleteCertificate({
-        certificateId: device.certificate.certificateId,
-        forceDelete: true
-      }).promise();
-    } catch (awsError) {
-      console.error('AWS deletion error:', awsError);
+    // Delete from AWS IoT Core (if configured)
+    if (process.env.AWS_ACCESS_KEY_ID) {
+      try {
+        const iot = new AWS.Iot();
+        await iot.deleteThing({ thingName: device.deviceId }).promise();
+        await iot.deletePolicy({ policyName: `${device.deviceId}_Policy` }).promise();
+        await iot.deleteCertificate({
+          certificateId: device.certificate.certificateId,
+          forceDelete: true
+        }).promise();
+      } catch (awsError) {
+        console.error('AWS deletion error:', awsError);
+      }
     }
 
     await Device.findByIdAndDelete(otpRecord.deviceData.deviceId);
@@ -808,8 +997,10 @@ app.post('/api/devices/verify-delete', authenticateToken, requireAdmin, async (r
     otpRecord.used = true;
     await otpRecord.save();
 
+    console.log(`✅ Device deleted: ${device.name}`);
     res.json({ message: 'Device deleted successfully' });
   } catch (error) {
+    console.error('Device deletion error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -835,6 +1026,7 @@ app.put('/api/devices/:id/location', authenticateToken, async (req, res) => {
 
     res.json(device);
   } catch (error) {
+    console.error('Device location update error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -845,27 +1037,72 @@ app.get('/api/devices/locations', authenticateToken, async (req, res) => {
     const devices = await Device.find({
       'location.latitude': { $exists: true },
       'location.longitude': { $exists: true }
-    }).select('name deviceId location status itemType')
-    .populate('itemType', 'name');
+    })
+      .select('name deviceId location status itemType')
+      .populate('itemType', 'name');
 
     res.json(devices);
   } catch (error) {
+    console.error('Device locations fetch error:', error);
     res.status(500).json({ message: error.message });
   }
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
+  console.error('Unhandled error:', err);
+  res.status(500).json({
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  });
 });
 
 // 404 handler for API routes
 app.use('/api/*', (req, res) => {
-  res.status(404).json({ message: 'API endpoint not found' });
+  res.status(404).json({
+    message: 'API endpoint not found',
+    availableEndpoints: [
+      'GET /api/vendors',
+      'GET /api/parameters',
+      'GET /api/projects',
+      'GET /api/devices',
+      'POST /api/auth/login',
+      'POST /api/auth/register'
+    ]
+  });
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  mongoose.connection.close(() => {
+    console.log('MongoDB connection closed');
+    process.exit(0);
+  });
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`✅ Server running on port ${PORT}`);
+const server = app.listen(PORT, "0.0.0.0", () => {
+  console.log(`\n🚀 IoT Device Management Server`);
+  console.log(`📡 Server running on: http://localhost:${PORT}`);
+  console.log(`🗄️  Database: ${mongoose.connection.readyState === 1 ? 'Connected' : 'Connecting...'}`);
+  console.log(`📧 Email: ${transporter ? 'Configured' : 'Disabled'}`);
+  console.log(`☁️  AWS: ${process.env.AWS_ACCESS_KEY_ID ? 'Configured' : 'Disabled (Mock mode)'}`);
+  console.log(`\n🔗 API Endpoints:`);
+  console.log(`   • Auth: http://3.7.165.153:${PORT}/api/auth/login`);
+  console.log(`   • Vendors: http://3.7.165.153:${PORT}/api/vendors`);
+  console.log(`   • Devices: http://3.7.165.153:${PORT}/api/devices`);
+  console.log(`   • Health: http://3.7.165.153:${PORT}/health`);
+  console.log(`\n💡 Place your HTML file in 'public/index.html' or access the API directly\n`);
+});
+
+// Handle server errors
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${PORT} is already in use. Please try a different port.`);
+    console.log(`💡 You can set a different port: PORT=3000 npm start`);
+  } else {
+    console.error('Server error:', err);
+  }
+  process.exit(1);
 });
