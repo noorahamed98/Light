@@ -22,11 +22,6 @@ app.use('/uploads', express.static('uploads'));
 // Add this after your other middleware
 app.use(express.static('public'));
 
-// Modify your root route to serve the HTML file instead of JSON
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
 // Configure AWS
 AWS.config.update({
   region: process.env.AWS_REGION || 'ap-south-1',
@@ -316,18 +311,9 @@ const generateFirmware = async (device) => {
   };
 };
 
-// Add a root route
+// Root route
 app.get('/', (req, res) => {
-  res.json({
-    message: 'IoT Management API Server is running!',
-    version: '1.0.0',
-    endpoints: {
-      auth: '/api/auth',
-      projects: '/api/projects',
-      devices: '/api/devices',
-      vendors: '/api/vendors'
-    }
-  });
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Authentication Routes
@@ -394,6 +380,18 @@ app.post('/api/projects', authenticateToken, async (req, res) => {
   }
 });
 
+app.delete('/api/projects/:id', authenticateToken, async (req, res) => {
+  try {
+    const project = await Project.findByIdAndDelete(req.params.id);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+    res.json({ message: 'Project deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Vendor Routes
 app.get('/api/vendors', authenticateToken, async (req, res) => {
   try {
@@ -411,6 +409,18 @@ app.post('/api/vendors', authenticateToken, async (req, res) => {
     res.status(201).json(vendor);
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+});
+
+app.delete('/api/vendors/:id', authenticateToken, async (req, res) => {
+  try {
+    const vendor = await Vendor.findByIdAndDelete(req.params.id);
+    if (!vendor) {
+      return res.status(404).json({ message: 'Vendor not found' });
+    }
+    res.json({ message: 'Vendor deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 
@@ -434,6 +444,18 @@ app.post('/api/parameters', authenticateToken, async (req, res) => {
   }
 });
 
+app.delete('/api/parameters/:id', authenticateToken, async (req, res) => {
+  try {
+    const parameter = await Parameter.findByIdAndDelete(req.params.id);
+    if (!parameter) {
+      return res.status(404).json({ message: 'Parameter not found' });
+    }
+    res.json({ message: 'Parameter deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Item Type Routes
 app.get('/api/item-types', authenticateToken, async (req, res) => {
   try {
@@ -451,6 +473,18 @@ app.post('/api/item-types', authenticateToken, async (req, res) => {
     res.status(201).json(itemType);
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+});
+
+app.delete('/api/item-types/:id', authenticateToken, async (req, res) => {
+  try {
+    const itemType = await ItemType.findByIdAndDelete(req.params.id);
+    if (!itemType) {
+      return res.status(404).json({ message: 'Item type not found' });
+    }
+    res.json({ message: 'Item type deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 
@@ -474,6 +508,18 @@ app.post('/api/messaging-policies', authenticateToken, async (req, res) => {
   }
 });
 
+app.delete('/api/messaging-policies/:id', authenticateToken, async (req, res) => {
+  try {
+    const policy = await MessagingPolicy.findByIdAndDelete(req.params.id);
+    if (!policy) {
+      return res.status(404).json({ message: 'Messaging policy not found' });
+    }
+    res.json({ message: 'Messaging policy deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Communication Policy Routes
 app.get('/api/communication-policies', authenticateToken, async (req, res) => {
   try {
@@ -491,6 +537,18 @@ app.post('/api/communication-policies', authenticateToken, async (req, res) => {
     res.status(201).json(policy);
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+});
+
+app.delete('/api/communication-policies/:id', authenticateToken, async (req, res) => {
+  try {
+    const policy = await CommunicationPolicy.findByIdAndDelete(req.params.id);
+    if (!policy) {
+      return res.status(404).json({ message: 'Communication policy not found' });
+    }
+    res.json({ message: 'Communication policy deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 
@@ -514,12 +572,40 @@ app.post('/api/space-types', authenticateToken, async (req, res) => {
   }
 });
 
+app.delete('/api/space-types/:id', authenticateToken, async (req, res) => {
+  try {
+    const spaceType = await SpaceType.findByIdAndDelete(req.params.id);
+    if (!spaceType) {
+      return res.status(404).json({ message: 'Space type not found' });
+    }
+    res.json({ message: 'Space type deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Device Routes
 app.get('/api/devices', authenticateToken, async (req, res) => {
   try {
     const devices = await Device.find()
       .populate('project itemType vendor communicationPolicy spaceType');
     res.json(devices);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get individual device
+app.get('/api/devices/:id', authenticateToken, async (req, res) => {
+  try {
+    const device = await Device.findById(req.params.id)
+      .populate('project itemType vendor communicationPolicy spaceType');
+    
+    if (!device) {
+      return res.status(404).json({ message: 'Device not found' });
+    }
+    
+    res.json(device);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -768,7 +854,18 @@ app.get('/api/devices/locations', authenticateToken, async (req, res) => {
   }
 });
 
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: 'Something went wrong!' });
+});
+
+// 404 handler for API routes
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ message: 'API endpoint not found' });
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
